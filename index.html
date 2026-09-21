@@ -4,15 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Informe Ejecutivo · Disponibilidad de Equipos</title>
-  
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js & Plugins -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <!-- SheetJS / XLSX library -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
   <script>
     tailwind.config = {
       theme: {
@@ -30,95 +25,43 @@
   <style>
     html, body { background: #F8FAFC; font-family: 'Inter', sans-serif; }
     .mono { font-family: 'JetBrains Mono', monospace; }
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: #F1F5F9; }
-    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
-    .badge { display:inline-flex; align-items:center; gap:2px; font-size:9px; font-weight:700; padding:1px 4px; border-radius:9999px; line-height: 1; }
   </style>
 </head>
 <body class="bg-bg text-ink h-screen overflow-hidden flex flex-col">
 
-<!-- LOADER SCREEN -->
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center bg-panel p-6 rounded-xl border border-border shadow-sm">
     <div id="spinner" class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan mb-3"></div>
     <h1 class="text-xl font-bold text-ink mb-1">Cargando Informe Ejecutivo...</h1>
-    <p class="text-sub text-xs mb-4">Leyendo pestaña <strong class="text-ink">Digitacion</strong> desde <code class="text-cyan">Analisis_pwq.xlsx</code> o selecciona tu archivo:</p>
+    <p class="text-sub text-xs mb-4">Buscando pestaña <strong class="text-ink">Digitacion</strong> en <code class="text-cyan">Analisis_pwq.xlsx</code>:</p>
 
     <div class="mb-4">
       <label for="fileInput" class="block w-full cursor-pointer bg-cyan/10 hover:bg-cyan/25 border border-cyan/30 text-cyan text-xs font-semibold py-3 px-4 rounded-lg transition-colors">
-        📁 Seleccionar archivo Excel (.xlsx)
+        📁 O seleccionar archivo manualmente (.xlsx)
       </label>
       <input type="file" id="fileInput" accept=".xlsx, .xls" class="hidden">
     </div>
 
-    <div id="loadError" class="hidden text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left max-h-40 overflow-y-auto"></div>
+    <div id="loadError" class="hidden text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left max-h-48 overflow-y-auto"></div>
   </div>
 </div>
 
-<!-- DASHBOARD -->
-<div id="dashboard" class="hidden h-full w-full flex flex-col p-2 gap-2 overflow-hidden">
-  <header class="flex items-center justify-between bg-panel2 border border-border px-3 py-1.5 rounded-lg flex-shrink-0">
-    <div class="flex items-center gap-2">
-      <div class="w-6 h-6 rounded bg-gradient-to-br from-cyan to-purple flex items-center justify-center font-bold text-white text-xs">IE</div>
-      <h1 class="font-bold text-xs md:text-sm text-ink leading-none">Informe Ejecutivo — Disponibilidad y Eficiencia de Equipos</h1>
-      <span class="badge bg-green/10 text-green border border-green/30 text-[10px]">Pestaña: Digitacion</span>
-    </div>
-    <div class="flex items-center gap-3">
-      <select id="filterGrupo" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink"></select>
-      <select id="filterMes" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink"></select>
-      <select id="filterSemana" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink"></select>
-      <button id="reloadBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel text-sub">Cambiar Archivo</button>
-    </div>
-  </header>
-
-  <!-- Fila 1: KPIs -->
-  <section class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-1 flex-shrink-0">
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Equipos Únicos</p><p id="kpiEquipos" class="text-sm font-black text-ink mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <div class="flex items-center justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Disp. Mecánica</p><span id="kpiDispBadge" class="badge bg-green/10 text-green border border-green/30">ÓPTIMO</span></div>
-      <p id="kpiDisp" class="text-sm font-black text-green mono">0%</p>
-    </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Disp. Obra</p><p id="kpiDispObra" class="text-sm font-black text-cyan mono">0%</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Horas Totales</p><p id="kpiTotalHoras" class="text-sm font-black text-ink mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Mayor Varado</p><p id="kpiClaseVarado" class="text-[9px] font-bold text-ink">—</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Producción</p><p id="kpiHorasProd" class="text-sm font-black text-cyan mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Disponibles</p><p id="kpiHorasDisp" class="text-sm font-black text-green mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Varadas</p><p id="kpiHorasVarado" class="text-sm font-black text-orange mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Equipos Varados</p><p id="kpiEquiposVarados" class="text-sm font-black text-red mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Utilización</p><p id="kpiUtilGlobal" class="text-sm font-black text-purple mono">0%</p></div>
-  </section>
-
-  <!-- Fila 2: Gráfica y Tablas -->
-  <section class="grid grid-cols-1 md:grid-cols-9 gap-2 flex-[1.6] min-h-0">
-    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Distribución Horas</h3><div class="flex-1 relative min-h-0"><canvas id="chartDonut"></canvas></div></div>
-    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Equipos por Clase</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-sm"><tbody id="tblClase"></tbody></table></div></div>
-    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Diagnóstico Equipos Varados</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-xs"><tbody id="tblVarados"></tbody></table></div></div>
-  </section>
+<div id="dashboard" class="hidden h-full w-full flex flex-col p-4">
+  <h1 class="text-lg font-bold text-ink">¡Cargado con éxito!</h1>
+  <p id="infoExito" class="text-sm text-sub"></p>
 </div>
 
 <script>
 (function(){
-  const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  let RAW = [];
-  let chartDonut = null;
-  let selectedEquipo = null, selectedTipo = null, selectedClaseTabla = null;
-  const mesLabels = {};
-
   const $ = (id) => document.getElementById(id);
-  Chart.register(ChartDataLabels);
 
   function showLoadError(msg){
     const el = $('loadError');
     el.innerHTML = msg;
     el.classList.remove('hidden');
+    $('spinner').classList.add('hidden');
   }
 
-  $('reloadBtn').addEventListener('click', () => {$('dashboard').classList.add('hidden');
-    $('loaderScreen').classList.remove('hidden');$('loadError').classList.add('hidden');
-  });
-
-  // Carga manual mediante input de archivo
   $('fileInput').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -129,13 +72,12 @@
         const wb = XLSX.read(data, { type: 'array', cellDates: true });
         processWorkbook(wb);
       } catch (err) {
-        showLoadError(`<strong>Error al procesar el Excel:</strong> ${err.message}`);
+        showLoadError(`Error al leer archivo: ${err.message}`);
       }
     };
     reader.readAsArrayBuffer(file);
   });
 
-  // Intento de carga automática al abrir la página buscando Analisis_pwq.xlsx
   async function tryAutoLoad() {
     try {
       const res = await fetch('Analisis_pwq.xlsx', { cache: 'no-cache' });
@@ -143,104 +85,46 @@
         const arrayBuffer = await res.arrayBuffer();
         const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
         processWorkbook(wb);
+      } else {
+        showLoadError(`No se pudo descargar automáticamente "Analisis_pwq.xlsx" desde el servidor (Error HTTP ${res.status}). Usa el botón manual de arriba.`);
       }
     } catch (e) {
-      // Si falla el fetch automático, el usuario puede usar el botón manual
+      showLoadError(`Error de red al buscar el archivo en el servidor. Usa el botón manual de arriba.`);
     }
   }
 
   window.addEventListener('DOMContentLoaded', tryAutoLoad);
 
-  function normalizeStr(v){
-    return String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  }
-
   function processWorkbook(wb){
     if (!wb.SheetNames || wb.SheetNames.length === 0) {
-      showLoadError("El archivo Excel no contiene pestañas válidas.");
+      showLoadError("El archivo Excel no contiene pestañas.");
       return;
     }
 
-    // Buscar específicamente la pestaña "Digitacion"
-    const targetSheetName = wb.SheetNames.find(s => normalizeStr(s).includes('digitac')) || wb.SheetNames[0];
+    // Listar pestañas disponibles para diagnóstico
+    const sheetsList = wb.SheetNames.join(', ');
+
+    // Buscar la pestaña que contenga "digitac" (ej. Digitacion, Digitación)
+    const targetSheetName = wb.SheetNames.find(s => {
+      const norm = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      return norm.includes('digitac');
+    });
+
+    if (!targetSheetName) {
+      showLoadError(`No se encontró ninguna pestaña llamada <strong>"Digitacion"</strong>.<br><br>Pestañas que sí existen en tu Excel:<br><code>${sheetsList}</code>`);
+      return;
+    }
+
     const sheet = wb.Sheets[targetSheetName];
     const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
 
     if (!json || json.length === 0) {
-      showLoadError(`La pestaña "${targetSheetName}" está vacía o no contiene filas.`);
+      showLoadError(`La pestaña <strong>"${targetSheetName}"</strong> fue encontrada pero está completamente vacía.`);
       return;
     }
 
-    processData(json);
-  }
-
-  function parseHoras(v){
-    if (typeof v === 'number') return v;
-    if (!v) return 0;
-    const n = parseFloat(String(v).replace(',', '.'));
-    return isNaN(n) ? 0 : n;
-  }
-
-  function parseFecha(v){
-    if (v instanceof Date && !isNaN(v)) return v;
-    if (typeof v === 'number' && XLSX.SSF) {
-      const d = XLSX.SSF.parse_date_code(v);
-      if (d) return new Date(d.y, d.m - 1, d.d);
-    }
-    if (typeof v === 'string' && v.trim() !== '') {
-      const d = new Date(v);
-      if (!isNaN(d)) return d;
-    }
-    return null;
-  }
-
-  function processData(json){
-    try {
-      const sample = json[0] || {};
-      const keys = Object.keys(sample);
-      const findKey = (cands) => keys.find(k => cands.some(c => normalizeStr(k).includes(normalizeStr(c)))) || cands[0];
-
-      const kEquipo = findKey(['Equipo', 'Identificación', 'Operario']);
-      const kClase = findKey(['Clase', 'Centro', 'Bodega']);
-      const kFecha = findKey(['Fecha', 'fecha']);
-      const kHorasDisp = findKey(['Horas_Disponibles', 'horometro_final']);
-      const kHorasProd = findKey(['Horas_Producción', 'Produccion']);
-      const kHorasVarado = findKey(['Horas_Varado', 'Varado']);
-
-      const rows = [];
-      json.forEach(r => {
-        const fecha = parseFecha(r[kFecha]);
-        const equipo = String(r[kEquipo] ?? '').trim();
-        const clase = String(r[kClase] ?? 'General').trim() || 'General';
-        const mesKey = fecha ? `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}` : 'Sin fecha';
-        
-        const valDisp = parseHoras(r[kHorasDisp]);
-        const valProd = parseHoras(r[kHorasProd]);
-        const valVarado = parseHoras(r[kHorasVarado]);
-
-        if (valDisp > 0 || valProd > 0 || valVarado > 0) {
-          if (valProd > 0) rows.push({ equipo: equipo || 'General', clase, grupo: clase, desTipo: 'Producción', horas: valProd, mesKey });
-          if (valDisp > 0) rows.push({ equipo: equipo || 'General', clase, grupo: clase, desTipo: 'Disponible', horas: valDisp, mesKey });
-          if (valVarado > 0) rows.push({ equipo: equipo || 'General', clase, grupo: clase, desTipo: 'Varado', horas: valVarado, mesKey });
-        }
-      });
-
-      if (rows.length === 0) {
-        showLoadError(`No se pudieron extraer registros válidos de la pestaña Digitacion. Columnas encontradas: <br><code>${keys.join(', ')}</code>`);
-        return;
-      }
-
-      RAW = rows;
-      $('loaderScreen').classList.add('hidden');$('dashboard').classList.remove('hidden');
-      render();
-    } catch (err) {
-      showLoadError(`Error procesando los datos: ${err.message}`);
-    }
-  }
-
-  function render(){
-    const equiposUnicos = new Set(RAW.map(r => r.equipo)).size;
-    $('kpiEquipos').textContent = equiposUnicos;
+    $('loaderScreen').classList.add('hidden');
+    $('dashboard').classList.remove('hidden');$('infoExito').textContent = `Se leyeron ${json.length} filas correctamente desde la pestaña "${targetSheetName}".`;
   }
 })();
 </script>
