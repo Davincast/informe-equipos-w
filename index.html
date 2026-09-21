@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Informe Ejecutivo · Disponibilidad de Equipos</title>
 
-<!-- Carga de librerías externas necesarias -->
+<!-- Carga de librerías externas -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
@@ -16,9 +16,9 @@
     theme: {
       extend: {
         colors: {
-          bg: '#F8FAFC',
+          bg: '#F1F5F9',
           panel: '#FFFFFF',
-          panel2: '#F1F5F9',
+          panel2: '#F8FAFC',
           border: '#E2E8F0',
           cyan: '#0891B2',
           green: '#059669',
@@ -32,160 +32,155 @@
     }
   }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  html, body { background: #EEF2F6; font-family: 'Inter', sans-serif; font-size: 13px; }
+  body { background: #E2E8F0; font-family: 'Inter', sans-serif; font-size: 12px; color: #0F172A; }
   .mono { font-family: 'JetBrains Mono', monospace; }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #F1F5F9; }
-  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
-  .badge { display:inline-flex; align-items:center; gap:2px; font-size:10px; font-weight:700; padding:2px 6px; border-radius:9999px; line-height: 1; }
+  .badge { display:inline-flex; align-items:center; font-size:10px; font-weight:700; padding:2px 8px; border-radius:9999px; }
+  .card { background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 </style>
 </head>
-<body class="bg-bg text-ink h-screen overflow-hidden flex flex-col p-2">
 
-<!-- LOADER / SCREEN INICIAL -->
-<div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4 bg-white rounded-xl border border-border shadow-sm">
-  <div class="max-w-md w-full text-center">
-    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan to-purple text-white flex items-center justify-center font-bold text-xl mx-auto mb-3 shadow">IE</div>
-    <h1 class="text-2xl font-bold text-ink mb-1">Informe Ejecutivo de Equipos</h1>
-    <p id="loadingStatus" class="text-sub text-xs mb-6">Cargando datos automáticamente desde <strong class="text-ink">Analisis pwq.xlsx</strong>...</p>
+<body class="p-3 min-h-screen">
 
-    <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel2 hover:border-cyan transition-all p-8 cursor-pointer">
-      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
-      <div class="text-sm text-ink font-semibold">Cargar manualmente "Analisis pwq.xlsx"</div>
-      <div class="text-xs text-sub mt-1">.xlsx, .xls, .csv</div>
-    </label>
+<!-- LOADER / PANTALLA INICIAL -->
+<div id="loaderScreen" class="max-w-md mx-auto my-20 card text-center p-8">
+  <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-600 to-purple-600 text-white flex items-center justify-center font-bold text-xl mx-auto mb-3 shadow">IE</div>
+  <h1 class="text-xl font-bold text-slate-800 mb-1">Informe Ejecutivo de Equipos</h1>
+  <p id="loadingStatus" class="text-slate-500 text-xs mb-6">Cargando datos automáticamente desde <strong>Analisis pwq.xlsx</strong>...</p>
 
-    <div id="loadError" class="hidden mt-3 text-xs text-red bg-red/10 border border-red/30 rounded p-2 text-left"></div>
-  </div>
+  <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:border-cyan-500 transition-all p-6 cursor-pointer">
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
+    <div class="text-xs text-slate-700 font-semibold">Cargar manualmente "Analisis pwq.xlsx"</div>
+    <div class="text-[10px] text-slate-400 mt-1">.xlsx, .xls, .csv</div>
+  </label>
+
+  <div id="loadError" class="hidden mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2 text-left"></div>
 </div>
 
-<!-- DASHBOARD COMPLETO -->
-<div id="dashboard" class="hidden h-full w-full flex flex-col gap-2 overflow-hidden">
+<!-- DASHBOARD COMPLETO (Sigue el flujo natural de la pantalla) -->
+<div id="dashboard" class="hidden max-w-[1600px] mx-auto space-y-2">
 
   <!-- Header principal y Filtros -->
-  <header class="flex flex-wrap items-center justify-between bg-panel border border-border px-3 py-2 rounded-lg shrink-0 shadow-sm gap-2">
+  <header class="card flex flex-wrap items-center justify-between py-2 px-3 gap-2">
     <div class="flex items-center gap-2">
-      <div class="w-7 h-7 rounded-md bg-gradient-to-br from-cyan to-purple text-white font-bold flex items-center justify-center text-xs shadow-sm">IE</div>
-      <div>
-        <h1 class="font-bold text-sm text-ink leading-tight">Informe Ejecutivo — Disponibilidad y Eficiencia de Equipos</h1>
-      </div>
+      <div class="w-6 h-6 rounded bg-indigo-700 text-white font-black flex items-center justify-center text-[10px]">IE</div>
+      <h1 class="font-bold text-sm text-slate-800">Informe Ejecutivo — Disponibilidad y Eficiencia de Equipos</h1>
       <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 ml-2">EPC - VIA LACTEA</span>
     </div>
 
-    <div class="flex items-center gap-3">
-      <div class="flex items-center gap-1.5">
-        <label for="filterGrupo" class="text-xs text-sub font-medium">Grupo:</label>
-        <select id="filterGrupo" class="text-xs bg-panel2 border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan"></select>
+    <div class="flex items-center gap-3 text-xs">
+      <div class="flex items-center gap-1">
+        <span class="text-slate-500 font-medium">Grupo:</span>
+        <select id="filterGrupo" class="bg-slate-100 border border-slate-300 rounded px-2 py-0.5 text-slate-800 focus:outline-none"></select>
       </div>
 
-      <div class="flex items-center gap-1.5">
-        <label for="filterMes" class="text-xs text-sub font-medium">Filtrar por Mes:</label>
-        <select id="filterMes" class="text-xs bg-panel2 border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan"></select>
+      <div class="flex items-center gap-1">
+        <span class="text-slate-500 font-medium">Filtrar por Mes:</span>
+        <select id="filterMes" class="bg-slate-100 border border-slate-300 rounded px-2 py-0.5 text-slate-800 focus:outline-none"></select>
       </div>
 
-      <div class="flex items-center gap-1.5">
-        <label for="filterSemana" class="text-xs text-sub font-medium">Semana:</label>
-        <select id="filterSemana" class="text-xs bg-panel2 border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan"></select>
+      <div class="flex items-center gap-1">
+        <span class="text-slate-500 font-medium">Semana:</span>
+        <select id="filterSemana" class="bg-slate-100 border border-slate-300 rounded px-2 py-0.5 text-slate-800 focus:outline-none"></select>
       </div>
 
-      <button id="resetBtn" class="text-xs px-2.5 py-1 rounded border border-border bg-panel2 hover:bg-slate-200 text-ink font-medium transition-colors">Cambiar archivo</button>
+      <button id="resetBtn" class="text-xs px-2 py-0.5 rounded border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium">Cambiar archivo</button>
     </div>
   </header>
 
   <!-- Fila 1: TARJETAS DE KPIS -->
-  <section class="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5 shrink-0">
-    <div class="bg-panel border border-border rounded-lg p-2 shadow-sm flex flex-col justify-between">
-      <p class="text-[9px] text-sub uppercase mono font-bold">Equipos Únicos</p>
-      <p id="kpiEquipos" class="text-lg font-black text-ink mono">0</p>
-      <p class="text-[8px] text-sub truncate">Activos en el proyecto</p>
+  <section class="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5">
+    <div class="card p-2">
+      <p class="text-[9px] text-slate-400 uppercase font-bold">Equipos Únicos</p>
+      <p id="kpiEquipos" class="text-base font-black text-slate-800 mono">0</p>
+      <p class="text-[8px] text-slate-400 truncate">Activos en el proyecto</p>
     </div>
 
-    <div class="bg-panel border border-border rounded-lg p-2 shadow-sm flex flex-col justify-between">
+    <div class="card p-2">
       <div class="flex items-center justify-between">
-        <p class="text-[9px] text-sub uppercase mono font-bold">% Disp. Mecánica</p>
-        <span id="kpiDispBadge" class="badge bg-green/10 text-green border border-green/30">ÓPTIMO</span>
+        <p class="text-[9px] text-slate-400 uppercase font-bold">% Disp. Mecánica</p>
+        <span id="kpiDispBadge" class="badge bg-emerald-100 text-emerald-800">ÓPTIMO</span>
       </div>
-      <p id="kpiDisp" class="text-lg font-black text-emerald-600 mono">0%</p>
-      <p class="text-[8px] text-sub">Meta: &ge; 70%</p>
+      <p id="kpiDisp" class="text-base font-black text-emerald-600 mono">0%</p>
+      <p class="text-[8px] text-slate-400">Meta: &ge; 70%</p>
     </div>
 
-    <div class="bg-panel border border-border rounded-lg p-2 shadow-sm flex flex-col justify-between">
-      <p class="text-[9px] text-sub uppercase mono font-bold">% Disp. Eq. Obra</p>
-      <p id="kpiDispObra" class="text-lg font-black text-cyan mono">0%</p>
-      <p class="text-[8px] text-sub truncate">Horas obra / Totales</p>
+    <div class="card p-2">
+      <p class="text-[9px] text-slate-400 uppercase font-bold">% Disp. Eq. Obra</p>
+      <p id="kpiDispObra" class="text-base font-black text-cyan-600 mono">0%</p>
+      <p class="text-[8px] text-slate-400 truncate">Horas obra / Totales</p>
     </div>
 
-    <div class="bg-panel border border-border rounded-lg p-2 shadow-sm flex flex-col justify-between">
-      <p class="text-[9px] text-sub uppercase mono font-bold">Horas Totales</p>
-      <p id="kpiTotalHoras" class="text-lg font-black text-ink mono">0</p>
-      <p class="text-[8px] text-sub truncate">Horas reportadas</p>
+    <div class="card p-2">
+      <p class="text-[9px] text-slate-400 uppercase font-bold">Horas Totales</p>
+      <p id="kpiTotalHoras" class="text-base font-black text-slate-800 mono">0</p>
+      <p class="text-[8px] text-slate-400 truncate">Horas reportadas</p>
     </div>
 
-    <div class="bg-panel border border-border rounded-lg p-2 shadow-sm flex flex-col justify-between">
-      <p class="text-[9px] text-sub uppercase mono font-bold">Mayor Varado</p>
-      <p id="kpiClaseVarado" class="text-[10px] font-bold text-ink leading-tight my-0.5 truncate">—</p>
-      <p id="kpiClaseVaradoHrs" class="text-[8px] text-orange mono font-semibold">0 h varadas</p>
+    <div class="card p-2">
+      <p class="text-[9px] text-slate-400 uppercase font-bold">Mayor Varado</p>
+      <p id="kpiClaseVarado" class="text-[10px] font-bold text-slate-800 truncate my-0.5">—</p>
+      <p id="kpiClaseVaradoHrs" class="text-[8px] text-orange-600 mono font-semibold">0 h varadas</p>
     </div>
 
-    <div class="bg-panel border border-border rounded-lg p-2 shadow-sm flex flex-col justify-between">
-      <p class="text-[9px] text-sub uppercase mono font-bold">Hrs Producción</p>
-      <p id="kpiHorasProd" class="text-lg font-black text-cyan mono">0</p>
-      <p class="text-[8px] text-sub mono"><span id="kpiPctProd">0%</span> del total</p>
+    <div class="card p-2">
+      <p class="text-[9px] text-slate-400 uppercase font-bold">Hrs Producción</p>
+      <p id="kpiHorasProd" class="text-base font-black text-cyan-600 mono">0</p>
+      <p class="text-[8px] text-slate-400 mono"><span id="kpiPctProd">0%</span> del total</p>
     </div>
 
-    <div class="bg-panel border border-border rounded-lg p-2 shadow-sm flex flex-col justify-between">
-      <p class="text-[9px] text-sub uppercase mono font-bold">Hrs Disponibles</p>
-      <p id="kpiHorasDisp" class="text-lg font-black text-emerald-600 mono">0</p>
-      <p class="text-[8px] text-sub mono"><span id="kpiPctDisp">0%</span> del total</p>
+    <div class="card p-2">
+      <p class="text-[9px] text-slate-400 uppercase font-bold">Hrs Disponibles</p>
+      <p id="kpiHorasDisp" class="text-base font-black text-emerald-600 mono">0</p>
+      <p class="text-[8px] text-slate-400 mono"><span id="kpiPctDisp">0%</span> del total</p>
     </div>
 
-    <div class="bg-panel border border-border rounded-lg p-2 shadow-sm flex flex-col justify-between">
-      <p class="text-[9px] text-sub uppercase mono font-bold">Hrs Varadas</p>
-      <p id="kpiHorasVarado" class="text-lg font-black text-orange mono">0</p>
-      <p class="text-[8px] text-sub mono"><span id="kpiPctVarado">0%</span> del total</p>
+    <div class="card p-2">
+      <p class="text-[9px] text-slate-400 uppercase font-bold">Hrs Varadas</p>
+      <p id="kpiHorasVarado" class="text-base font-black text-orange-600 mono">0</p>
+      <p class="text-[8px] text-slate-400 mono"><span id="kpiPctVarado">0%</span> del total</p>
     </div>
 
-    <div class="bg-panel border border-border rounded-lg p-2 shadow-sm flex flex-col justify-between">
-      <p class="text-[9px] text-sub uppercase mono font-bold">Equipos Varados</p>
-      <p id="kpiEquiposVarados" class="text-lg font-black text-red mono">0</p>
-      <p id="kpiEquiposVaradosSub" class="text-[8px] text-sub truncate">0 de 0 (0%)</p>
+    <div class="card p-2">
+      <p class="text-[9px] text-slate-400 uppercase font-bold">Equipos Varados</p>
+      <p id="kpiEquiposVarados" class="text-base font-black text-red-600 mono">0</p>
+      <p id="kpiEquiposVaradosSub" class="text-[8px] text-slate-400 truncate">0 de 0 (0%)</p>
     </div>
 
-    <div class="bg-panel border border-border rounded-lg p-2 shadow-sm flex flex-col justify-between">
-      <p class="text-[9px] text-sub uppercase mono font-bold">% Utilización</p>
-      <p id="kpiUtilGlobal" class="text-lg font-black text-purple mono">0%</p>
-      <p class="text-[8px] text-sub truncate">Prod / (Prod + Disp)</p>
+    <div class="card p-2">
+      <p class="text-[9px] text-slate-400 uppercase font-bold">% Utilización</p>
+      <p id="kpiUtilGlobal" class="text-base font-black text-purple-600 mono">0%</p>
+      <p class="text-[8px] text-slate-400 truncate">Prod / (Prod + Disp)</p>
     </div>
   </section>
 
   <!-- Fila 2: DONUT + CANTIDAD CLASE + DIAGNÓSTICO -->
-  <section class="grid grid-cols-1 md:grid-cols-12 gap-2 flex-[1.8] min-h-0">
+  <section class="grid grid-cols-1 md:grid-cols-12 gap-2">
     <!-- Donut -->
-    <div class="md:col-span-4 bg-panel border border-border rounded-lg p-2.5 flex flex-col min-h-0 shadow-sm">
-      <h3 class="font-bold text-xs text-ink mb-1">Distribución de Horas Totales</h3>
-      <div class="flex-1 relative min-h-0">
+    <div class="card md:col-span-4 flex flex-col h-[280px]">
+      <h3 class="font-bold text-xs text-slate-800 mb-1">Distribución de Horas Totales</h3>
+      <div class="flex-1 relative w-full h-full">
         <canvas id="chartDonut"></canvas>
       </div>
     </div>
 
-    <!-- Tabla Cantidad de Equipos por Clase -->
-    <div class="md:col-span-4 bg-panel border border-border rounded-lg p-2.5 flex flex-col min-h-0 shadow-sm">
-      <h3 class="font-bold text-xs text-ink mb-1">Cantidad Equipos por Clase</h3>
-      <div class="flex-1 min-h-0 border border-border rounded overflow-hidden flex flex-col">
+    <!-- Tabla Cantidad de Equipos por Clase (Mantiene altura natural para mostrar la lista completa) -->
+    <div class="card md:col-span-4 flex flex-col h-[280px]">
+      <h3 class="font-bold text-xs text-slate-800 mb-1">Cantidad Equipos por Clase</h3>
+      <div class="flex-1 border border-slate-200 rounded overflow-hidden flex flex-col bg-white">
         <div class="flex-1 overflow-y-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-panel2 text-ink border-b border-border sticky top-0 font-bold uppercase">
+          <table class="w-full text-left text-[11px]">
+            <thead class="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200 sticky top-0 text-[10px]">
               <tr>
-                <th class="p-1.5">Equipo</th>
-                <th class="p-1.5 text-right">Cantidad</th>
+                <th class="p-1">EQUIPO</th>
+                <th class="p-1 text-right">CANTIDAD</th>
               </tr>
             </thead>
-            <tbody id="tblClase" class="divide-y divide-border"></tbody>
+            <tbody id="tblClase" class="divide-y divide-slate-100"></tbody>
           </table>
         </div>
-        <div class="bg-panel2 p-1.5 border-t border-border flex justify-between font-bold text-xs">
+        <div class="bg-slate-100 p-1 border-t border-slate-200 flex justify-between font-bold text-[11px] text-slate-800">
           <span>TOTAL</span>
           <span id="tblClaseTotal" class="mono">0</span>
         </div>
@@ -193,59 +188,59 @@
     </div>
 
     <!-- Diagnóstico de Equipos Varados -->
-    <div class="md:col-span-4 bg-panel border border-border rounded-lg p-2.5 flex flex-col min-h-0 shadow-sm">
-      <h3 class="font-bold text-xs text-ink mb-1">Diagnóstico de Equipos Varados</h3>
-      <div class="flex-1 min-h-0 border border-border rounded overflow-y-auto">
-        <table class="w-full text-left text-[11px]">
-          <thead class="bg-panel2 text-sub font-bold uppercase border-b border-border sticky top-0">
+    <div class="card md:col-span-4 flex flex-col h-[280px]">
+      <h3 class="font-bold text-xs text-slate-800 mb-1">Diagnóstico de Equipos Varados</h3>
+      <div class="flex-1 border border-slate-200 rounded overflow-y-auto bg-white">
+        <table class="w-full text-left text-[10px]">
+          <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b border-slate-200 sticky top-0">
             <tr>
-              <th class="p-1">Equipo</th>
-              <th class="p-1">Clase</th>
-              <th class="p-1 text-right">Hrs</th>
-              <th class="p-1 text-right">% Imp.</th>
-              <th class="p-1">Causa Contextualizada</th>
+              <th class="p-1">EQUIPO</th>
+              <th class="p-1">CLASE</th>
+              <th class="p-1 text-right">HRS</th>
+              <th class="p-1 text-right">% IMP.</th>
+              <th class="p-1">CAUSA CONTEXTUALIZADA</th>
             </tr>
           </thead>
-          <tbody id="tblVarados" class="divide-y divide-border"></tbody>
+          <tbody id="tblVarados" class="divide-y divide-slate-100"></tbody>
         </table>
       </div>
     </div>
   </section>
 
   <!-- Fila 3: GRÁFICAS INFERIORES -->
-  <section class="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-[2.2] min-h-0">
+  <section class="grid grid-cols-1 lg:grid-cols-12 gap-2">
     <!-- Barras Horizontales por Grupo -->
-    <div class="lg:col-span-8 bg-panel border border-border rounded-lg p-2.5 flex flex-col min-h-0 shadow-sm">
-      <h3 class="font-bold text-xs text-ink mb-1">Relación Trabajado - Varado - Disponible por Grupo de Equipos</h3>
-      <div class="flex-1 relative min-h-0">
+    <div class="card lg:col-span-8 h-[320px] flex flex-col">
+      <h3 class="font-bold text-xs text-slate-800 mb-1">Relación Trabajado - Varado - Disponible por Grupo de Equipos</h3>
+      <div class="flex-1 relative w-full h-full">
         <canvas id="chartResumen"></canvas>
       </div>
     </div>
 
     <!-- Columna Derecha: Líneas + Tabla Desviación -->
-    <div class="lg:col-span-4 flex flex-col gap-2 min-h-0">
-      <div class="flex-[1.4] bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-        <h3 class="font-bold text-xs text-ink mb-1">% Utilización y % Disponibilidad por Semana</h3>
-        <div class="flex-1 relative min-h-0">
+    <div class="lg:col-span-4 flex flex-col gap-2 h-[320px]">
+      <div class="card flex-1 flex flex-col p-2">
+        <h3 class="font-bold text-xs text-slate-800 mb-1">% Utilización y % Disponibilidad por Semana</h3>
+        <div class="flex-1 relative w-full h-full">
           <canvas id="chartSemana"></canvas>
         </div>
       </div>
 
-      <div class="flex-1 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
+      <div class="card h-[130px] flex flex-col p-2">
         <div class="flex justify-between items-center mb-1">
-          <h3 class="font-bold text-xs text-ink">Desviaciones vs. Promedio Semanal</h3>
-          <span class="text-[9px] text-sub">Prom. %Disp: <strong id="promDispLabel" class="text-ink">0%</strong></span>
+          <h3 class="font-bold text-xs text-slate-800">Desviaciones vs. Promedio Semanal</h3>
+          <span class="text-[9px] text-slate-500">Prom. %Disp: <strong id="promDispLabel" class="text-slate-800">0%</strong></span>
         </div>
-        <div class="flex-1 min-h-0 border border-border rounded overflow-y-auto">
+        <div class="flex-1 border border-slate-200 rounded overflow-y-auto bg-white">
           <table class="w-full text-left text-[10px]">
-            <thead class="bg-panel2 text-sub font-bold uppercase border-b border-border sticky top-0">
+            <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b border-slate-200 sticky top-0">
               <tr>
-                <th class="p-1">Semana</th>
-                <th class="p-1 text-right">%Disp</th>
-                <th class="p-1 text-right">Desviación</th>
+                <th class="p-1">SEMANA</th>
+                <th class="p-1 text-right">%DISP</th>
+                <th class="p-1 text-right">DESVIACIÓN</th>
               </tr>
             </thead>
-            <tbody id="tblDesviacion" class="divide-y divide-border"></tbody>
+            <tbody id="tblDesviacion" class="divide-y divide-slate-100"></tbody>
           </table>
         </div>
       </div>
@@ -259,7 +254,7 @@
   const EXCEL_FILENAME = 'Analisis pwq.xlsx';
   const CENTRO_FIJO = "EPC - VIA LACTEA";
   const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  const COLORS = { prod:'#0891B2', disp:'#059669', varado:'#EA580C', darkBlue:'#1E3A8A', sky:'#38BDF8', gray:'#94A3B8' };
+  const COLORS = { prod:'#0891B2', disp:'#059669', varado:'#EA580C', darkBlue:'#1E3A8A', sky:'#0284C7', gray:'#94A3B8' };
 
   let RAW = [];
   let chartDonut = null;
@@ -287,19 +282,16 @@
     $('loadError').textContent = '';$('loadError').classList.add('hidden');
   }
 
-  // Intento de carga automática desde el servidor/repositorio
-  window.addEventListener('DOMContentLoaded', () => {
-    fetchAutoExcel();
-  });
+  window.addEventListener('DOMContentLoaded', fetchAutoExcel);
 
   function fetchAutoExcel(){
     fetch(encodeURIComponent(EXCEL_FILENAME) + '?v=' + new Date().getTime())
       .then(res => {
-        if(!res.ok) throw new Error('No se pudo encontrar el archivo en el directorio.');
+        if(!res.ok) throw new Error('No se encontró el archivo.');
         return res.arrayBuffer();
       })
       .then(buffer => parseAndProcessBuffer(buffer))
-      .catch(err => {
+      .catch(() => {
         $('loadingStatus').textContent = 'Suba manualmente "Analisis pwq.xlsx" para visualizar el informe.';
       });
   }
@@ -553,12 +545,12 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '68%',
+        cutout: '65%',
         plugins: {
-          legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+          legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } },
           datalabels: {
             color: '#0F172A',
-            font: { size: 10, weight: 'bold' },
+            font: { size: 9, weight: 'bold' },
             formatter: (value) => {
               if (!value || total === 0) return '';
               const pct = ((value / total) * 100).toFixed(1);
@@ -581,8 +573,8 @@
     const sorted = Object.entries(map).sort((a,b) => a[0].localeCompare(b[0]));
     tbody.innerHTML = sorted.map(([clase, equipos]) => `
       <tr>
-        <td class="p-1.5 font-medium text-ink">${clase}</td>
-        <td class="p-1.5 text-right mono text-sub font-semibold">${equipos.size}</td>
+        <td class="p-1 font-medium text-slate-700">${clase}</td>
+        <td class="p-1 text-right mono text-slate-500 font-semibold">${equipos.size}</td>
       </tr>`).join('');
 
     $('tblClaseTotal').textContent = new Set(data.map(r => r.equipo)).size;
@@ -630,13 +622,13 @@
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        scales: { x: { stacked: true, max: 100 }, y: { stacked: true } },
+        scales: { x: { stacked: true, max: 100 }, y: { stacked: true, ticks: { font: { size: 9 } } } },
         plugins: {
-          legend: { position: 'top', labels: { boxWidth: 10 } },
+          legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
           datalabels: {
             color: '#FFFFFF',
-            font: { size: 9, weight: 'bold' },
-            formatter: (v) => v > 5 ? `${v}%` : ''
+            font: { size: 8, weight: 'bold' },
+            formatter: (v) => v > 6 ? `${v}%` : ''
           }
         }
       }
@@ -672,18 +664,18 @@
       data: {
         labels,
         datasets: [
-          { label: '% Utilización', data: pctUtilSemana, borderColor: COLORS.prod, backgroundColor: COLORS.prod, tension: 0.2 },
-          { label: '% Disponibilidad', data: pctDispSemana, borderColor: COLORS.disp, backgroundColor: COLORS.disp, tension: 0.2 }
+          { label: '% Utilización', data: pctUtilSemana, borderColor: COLORS.prod, backgroundColor: COLORS.prod, tension: 0.1 },
+          { label: '% Disponibilidad', data: pctDispSemana, borderColor: COLORS.disp, backgroundColor: COLORS.disp, tension: 0.1 }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'top', labels: { boxWidth: 10 } },
+          legend: { position: 'top', labels: { boxWidth: 10, font: { size: 9 } } },
           datalabels: {
             align: 'top',
-            font: { size: 9, weight: 'bold' },
+            font: { size: 8, weight: 'bold' },
             formatter: (v) => `${v}%`
           }
         }
@@ -713,10 +705,10 @@
     const tbody = $('tblDesviacion');
     tbody.innerHTML = calc.map(c => {
       const dev = c.pctDisp - promDisp;
-      const colorDev = dev < 0 ? 'text-red font-bold' : 'text-emerald-600 font-bold';
+      const colorDev = dev < 0 ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold';
       return `<tr>
-        <td class="p-1 text-ink font-semibold mono">${c.semana}</td>
-        <td class="p-1 text-right mono text-sub">${c.pctDisp.toFixed(1)}%</td>
+        <td class="p-1 text-slate-800 font-semibold mono">${c.semana}</td>
+        <td class="p-1 text-right mono text-slate-500">${c.pctDisp.toFixed(1)}%</td>
         <td class="p-1 text-right mono ${colorDev}">${dev >= 0 ? '▲' : '▼'} ${Math.abs(dev).toFixed(1)} pts</td>
       </tr>`;
     }).join('');
@@ -733,18 +725,18 @@
     const sorted = Object.entries(map).sort((a,b) => b[1].horas - a[1].horas);
 
     if(!sorted.length){
-      tbody.innerHTML = '<tr><td colspan="5" class="p-2 text-center text-sub italic">Sin equipos varados</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="p-2 text-center text-slate-400 italic">Sin equipos varados</td></tr>';
       return;
     }
 
     tbody.innerHTML = sorted.map(([eq, b]) => {
       const pctImpacto = totalVarado > 0 ? (b.horas / totalVarado) * 100 : 0;
       return `<tr>
-        <td class="p-1 font-bold text-ink mono">${eq}</td>
-        <td class="p-1 text-sub">${b.clase}</td>
-        <td class="p-1 text-right mono text-orange font-bold">${Math.round(b.horas)}</td>
-        <td class="p-1 text-right mono text-red font-bold">${pctImpacto.toFixed(1)}%</td>
-        <td class="p-1 text-sub max-w-[120px] truncate" title="${b.causa}">${b.causa}</td>
+        <td class="p-1 font-bold text-slate-800 mono">${eq}</td>
+        <td class="p-1 text-slate-500">${b.clase}</td>
+        <td class="p-1 text-right mono text-orange-600 font-bold">${Math.round(b.horas)}</td>
+        <td class="p-1 text-right mono text-red-600 font-bold">${pctImpacto.toFixed(1)}%</td>
+        <td class="p-1 text-slate-600 truncate max-w-[100px]" title="${b.causa}">${b.causa}</td>
       </tr>`;
     }).join('');
   }
