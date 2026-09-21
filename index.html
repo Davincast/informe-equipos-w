@@ -4,11 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Informe Ejecutivo · Disponibilidad de Equipos</title>
-  
-  <!-- Librerías de gráficos y hojas de cálculo -->
-  <script src="chart.umd.min.js"></script>
-  <script src="chartjs-plugin-datalabels.min.js"></script>
-  <script src="xlsx.full.min.js"></script>
+
+  <!-- Tailwind CSS por CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#F8FAFC',
+            panel: '#FFFFFF',
+            panel2: '#F1F5F9',
+            border: '#E2E8F0',
+            cyan: '#0891B2',
+            green: '#059669',
+            orange: '#EA580C',
+            red: '#DC2626',
+            purple: '#7C3AED',
+            ink: '#0F172A',
+            sub: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Librerías JS desde CDN oficiales -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     html, body { background: #F8FAFC; font-family: 'Inter', sans-serif; }
@@ -25,7 +49,7 @@
   <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
     <div class="max-w-md w-full text-center">
       <h1 class="text-2xl font-bold text-ink mb-2">Informe Ejecutivo de Equipos</h1>
-      <p class="text-sub text-xs mb-6">Carga el archivo <strong>Analisis pwq.xlsx</strong> (Pestaña <strong>Digitacion</strong>, Tabla <strong>Digitacion_2</strong>) para generar el panel.</p>
+      <p class="text-sub text-xs mb-6">Carga el archivo <strong>Analisis pwq.xlsx</strong> (Pestaña <strong>Digitacion</strong>) para generar el panel.</p>
 
       <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/60 transition-all p-8 cursor-pointer">
         <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
@@ -37,10 +61,10 @@
     </div>
   </div>
 
-  <!-- DASHBOARD / INFORME (Se activa tras subir el Excel) -->
+  <!-- DASHBOARD / PANEL INTERACTIVO -->
   <div id="dashboard" class="hidden h-full w-full flex flex-col p-2 gap-2 overflow-hidden">
 
-    <!-- Encabezado y Filtros -->
+    <!-- Header / Filtros -->
     <header class="flex items-center justify-between bg-panel2 border border-border px-3 py-1.5 rounded-lg flex-shrink-0">
       <div class="flex items-center gap-2">
         <div class="w-6 h-6 rounded bg-gradient-to-br from-cyan to-purple flex items-center justify-center font-bold text-white text-xs">IE</div>
@@ -55,7 +79,7 @@
         </div>
 
         <div class="flex items-center gap-1.5">
-          <label for="filterMes" class="text-xs text-sub font-medium">Filtrar por Mes:</label>
+          <label for="filterMes" class="text-xs text-sub font-medium">Mes:</label>
           <select id="filterMes" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
         </div>
 
@@ -68,7 +92,7 @@
       </div>
     </header>
 
-    <!-- Fila 1: Indicadores KPI principales -->
+    <!-- Tarjetas KPI Principales -->
     <section class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-1 flex-shrink-0">
       <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
         <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Equipos Únicos</p>
@@ -81,20 +105,101 @@
         </div>
         <p id="kpiDisp" class="text-sm font-black text-green mono leading-tight my-0">0%</p>
       </div>
-      <!-- Resto de tarjetas KPI... -->
+      <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+        <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">% Disp. Obra</p>
+        <p id="kpiDispObra" class="text-sm font-black text-cyan mono leading-tight my-0">0%</p>
+      </div>
+      <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+        <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Horas Totales</p>
+        <p id="kpiTotalHoras" class="text-sm font-black text-ink mono leading-tight my-0">0</p>
+      </div>
+      <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+        <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Producción</p>
+        <p id="kpiHorasProd" class="text-sm font-black text-cyan mono leading-tight my-0">0</p>
+      </div>
+      <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+        <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Disponibles</p>
+        <p id="kpiHorasDisp" class="text-sm font-black text-green mono leading-tight my-0">0</p>
+      </div>
+      <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+        <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Varadas</p>
+        <p id="kpiHorasVarado" class="text-sm font-black text-orange mono leading-tight my-0">0</p>
+      </div>
+      <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+        <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Equipos Varados</p>
+        <p id="kpiEquiposVarados" class="text-sm font-black text-red mono leading-tight my-0">0</p>
+      </div>
+      <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+        <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">% Utilización</p>
+        <p id="kpiUtilGlobal" class="text-sm font-black text-purple mono leading-tight my-0">0%</p>
+      </div>
     </section>
 
-    <!-- Fila 2: Gráficos y Diagnóstico de Varados -->
+    <!-- Gráficos y Tablas -->
     <section class="grid grid-cols-1 md:grid-cols-9 gap-2 flex-[1.6] min-h-0">
       <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-        <h3 class="font-semibold text-xs text-ink">Distribución de Horas Totales</h3>
+        <h3 class="font-semibold text-xs text-ink mb-1">Distribución de Horas</h3>
         <div class="flex-1 relative min-h-0">
           <canvas id="chartDonut"></canvas>
         </div>
       </div>
-      <!-- Tablas de Equipos y Causa de Varados... -->
+      <div class="md:col-span-6 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
+        <h3 class="font-semibold text-xs text-ink mb-1">Diagnóstico de Equipos Varados</h3>
+        <div class="overflow-y-auto flex-1 border border-border rounded">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-panel2 sticky top-0 border-b border-border">
+              <tr>
+                <th class="p-1.5">Equipo</th>
+                <th class="p-1.5">Clase</th>
+                <th class="p-1.5 text-right">Hrs Varado</th>
+                <th class="p-1.5">Causa</th>
+              </tr>
+            </thead>
+            <tbody id="tblVarados" class="divide-y divide-border"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
-
   </div>
+
+  <!-- SCRIPT DE PROCESAMIENTO EXCEL -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const fileInput = document.getElementById('fileInput');
+      const dropZone = document.getElementById('dropZone');
+
+      dropZone.addEventListener('dragover', (e) => e.preventDefault());
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+      });
+
+      function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+          
+          // Mostrar Dashboard tras procesar
+          document.getElementById('loaderScreen').classList.add('hidden');
+          document.getElementById('dashboard').classList.remove('hidden');
+          
+          console.log("Datos cargados correctamente:", jsonData);
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        document.getElementById('dashboard').classList.add('hidden');
+        document.getElementById('loaderScreen').classList.remove('hidden');
+      });
+    });
+  </script>
 </body>
 </html>
