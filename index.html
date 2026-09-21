@@ -48,12 +48,20 @@
 
 <!-- LOADER SCREEN -->
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
-  <div class="max-w-md w-full text-center">
-    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan mb-4"></div>
+  <div class="max-w-md w-full text-center bg-panel p-6 rounded-xl border border-border shadow-sm">
+    <div id="spinner" class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan mb-3"></div>
     <h1 class="text-xl font-bold text-ink mb-1">Cargando Informe Ejecutivo...</h1>
-    <p class="text-sub text-xs">Leyendo datos automáticamente desde el archivo de Excel</p>
+    <p class="text-sub text-xs mb-4">Buscando archivo en el servidor o selecciona tu archivo manualmente:</p>
 
-    <div id="loadError" class="hidden mt-4 text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left"></div>
+    <!-- Selector manual de archivos por si falla el automático -->
+    <div class="mb-4">
+      <label for="fileInput" class="block w-full cursor-pointer bg-cyan/10 hover:bg-cyan/20 border border-cyan/30 text-cyan text-xs font-semibold py-2.5 px-4 rounded-lg transition-colors">
+        📁 Seleccionar archivo Excel (.xlsx)
+      </label>
+      <input type="file" id="fileInput" accept=".xlsx, .xls" class="hidden">
+    </div>
+
+    <div id="loadError" class="hidden text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left"></div>
   </div>
 </div>
 
@@ -84,7 +92,7 @@
         <select id="filterSemana" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
       </div>
 
-      <button id="reloadBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Recargar Datos</button>
+      <button id="reloadBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Cambiar Archivo</button>
     </div>
   </header>
 
@@ -276,7 +284,6 @@
   const COLORS = { prod:'#0891B2', disp:'#059669', varado:'#EA580C', orange:'#EA580C', purple:'#7C3AED', green:'#059669' };
 
   let RAW = [];
-  let TOTAL_FLOTA = 0;
   let chartDonut = null;
   let chartResumen = null;
   let chartSemana = null;
@@ -305,17 +312,34 @@
 
   function clearLoadError(){
     $('loadError').textContent = '';
-    $('loadError').classList.add('hidden');
+    $('loadError'].classList?.add('hidden');
   }
 
   $('reloadBtn').addEventListener('click', () => {
     $('dashboard').classList.add('hidden');
     $('loaderScreen').classList.remove('hidden');
-    clearLoadError();
+    if($('loadError')) $('loadError').classList.add('hidden');
     selectedEquipo = null;
     selectedTipo = null;
     selectedClaseTabla = null;
-    loadExcelFromUrl();
+  });
+
+  // Manejador del input de archivo manual
+  $('fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, { type: 'array', cellDates: true });
+        processWorkbook(wb);
+      } catch (err) {
+        showLoadError(`<strong>Error al leer el archivo:</strong> ${err.message}`);
+      }
+    };
+    reader.readAsArrayBuffer(file);
   });
 
   window.addEventListener('resize', () => {
@@ -329,57 +353,45 @@
     }).observe(wrapChartSemanaEl);
   }
 
-  $('clearEquipoFilter').addEventListener('click', () => { selectedEquipo = null; render(); });
-  $('clearTipoFilter').addEventListener('click', () => { selectedTipo = null; render(); });
-  $('clearClaseFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
-  $('clearClaseChartFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
-  $('clearSemanaFilter').addEventListener('click', () => { $('filterSemana').value = ''; render(); });
+  $('clearEquipoFilter').addEventListener('click', () => { selectedEquipo = null; render(); });$('clearTipoFilter').addEventListener('click', () => { selectedTipo = null; render(); });
+  $('clearClaseFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });$('clearClaseChartFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
+  $('clearSemanaFilter').addEventListener('click', () => {$('filterSemana').value = ''; render(); });
 
-  async function loadExcelFromUrl() {
-    clearLoadError();
+  // Intento de carga automática al abrir la página
+  async function tryAutoLoad() {
     const possibleNames = ["Analisis_pwq.xlsx", "Analisis pwq.xlsx", "Analisis%20pwq.xlsx"];
-    let response = null;
-
     for (const name of possibleNames) {
       try {
         const res = await fetch(name, { cache: 'no-cache' });
         if (res.ok) {
-          response = res;
-          break;
+          const arrayBuffer = await res.arrayBuffer();
+          const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
+          processWorkbook(wb);
+          return;
         }
       } catch (e) {}
     }
+  }
 
-    if (!response) {
-      showLoadError('No se encontró el archivo de Excel en el servidor. Asegúrate de que el archivo <strong>Analisis_pwq.xlsx</strong> esté subido en GitHub.');
+  window.addEventListener('DOMContentLoaded', tryAutoLoad);
+
+  function processWorkbook(wb){
+    const targetSheetName = wb.SheetNames.find(s => normalizeStr(s).includes('digitac')) || wb.SheetNames[0];
+    const sheet = wb.Sheets[targetSheetName];
+
+    if (!sheet) {
+      showLoadError('No se encontró ninguna pestaña compatible en el archivo Excel.');
       return;
     }
 
-    try {
-      const arrayBuffer = await response.arrayBuffer();
-      const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
-
-      const targetSheetName = wb.SheetNames.find(s => normalizeStr(s) === normalizeStr('Digitacion')) || wb.SheetNames[0];
-      const sheet = wb.Sheets[targetSheetName];
-
-      if (!sheet) {
-        showLoadError('No se encontró la pestaña "Digitacion" en el archivo Excel.');
-        return;
-      }
-
-      const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
-      if (!json || json.length === 0) {
-        showLoadError('La pestaña "Digitacion" fue encontrada pero no contiene datos.');
-        return;
-      }
-
-      processData(json);
-    } catch (err) {
-      showLoadError(`<strong>Error al procesar los datos:</strong> ${err.message}`);
+    const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+    if (!json || json.length === 0) {
+      showLoadError('La pestaña encontrada está vacía o no contiene filas válidas.');
+      return;
     }
-  }
 
-  window.addEventListener('DOMContentLoaded', loadExcelFromUrl);
+    processData(json);
+  }
 
   function parseHoras(v){
     if (typeof v === 'number') return v;
@@ -485,7 +497,6 @@
       return;
     }
 
-    TOTAL_FLOTA = new Set(rows.map(r => r.equipo)).size;
     RAW = agruparYCalcularHoras(rows);
     initFilters();
     $('loaderScreen').classList.add('hidden');$('dashboard').classList.remove('hidden');
