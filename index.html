@@ -936,15 +936,41 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function iniciarDashboard(json) {
-  // Aquí va todo el código que compartiste (procesamiento de 'json', renderizado, etc.)
-  // ...
+  // Aquí pones o llamas a la función que procesa los datos de tu Excel
+  // Por lo que se ve en tu código de abajo, tu función principal se llama processData:
+  processData(json);
 }
-  // Inicializar cargando los datos automáticamente al abrir la página
-  window.addEventListener('DOMContentLoaded', () => {
-    processData(datosIncrustados);
-  });
 
-})();
+// Inicializar cargando el archivo Excel automáticamente desde GitHub al abrir la página
+document.addEventListener("DOMContentLoaded", () => {
+  const archivoExcelUrl = "./Analisis_pwq.xlsx"; 
+
+  fetch(archivoExcelUrl)
+    .then(response => {
+      if (!response.ok) throw new Error("No se pudo cargar el archivo Excel.");
+      return response.arrayBuffer();
+    })
+    .then(buffer => {
+      const workbook = XLSX.read(buffer, { type: "array" });
+      
+      const nombreHoja = workbook.SheetNames.includes("Digitacion_2") 
+        ? "Digitacion_2" 
+        : workbook.SheetNames[0];
+      
+      const worksheet = workbook.Sheets[nombreHoja];
+      const json = XLSX.utils.sheet_to_json(worksheet);
+
+      if (!json || json.length === 0) {
+        console.error("La hoja está vacía");
+        return;
+      }
+
+      iniciarDashboard(json);
+    })
+    .catch(error => {
+      console.error("Error al cargar los datos automáticamente:", error);
+    });
+});;
 </script>
 
 </body></html>
