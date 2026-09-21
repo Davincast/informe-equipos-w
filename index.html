@@ -13,17 +13,9 @@
     theme: {
       extend: {
         colors: {
-          bg: '#F8FAFC',
-          panel: '#FFFFFF',
-          panel2: '#F1F5F9',
-          border: '#E2E8F0',
-          cyan: '#0891B2',
-          green: '#059669',
-          orange: '#EA580C',
-          red: '#DC2626',
-          purple: '#7C3AED',
-          ink: '#0F172A',
-          sub: '#64748B',
+          bg: '#F8FAFC', panel: '#FFFFFF', panel2: '#F1F5F9', border: '#E2E8F0',
+          cyan: '#0891B2', green: '#059669', orange: '#EA580C', red: '#DC2626',
+          purple: '#7C3AED', ink: '#0F172A', sub: '#64748B',
         }
       }
     }
@@ -66,121 +58,44 @@
       <span class="badge bg-green/10 text-green border border-green/30 text-[10px]">EPC - VIA LACTEA</span>
     </div>
     <div class="flex items-center gap-3">
-      <div class="flex items-center gap-1.5">
-        <label for="filterGrupo" class="text-xs text-sub font-medium">Grupo:</label>
-        <select id="filterGrupo" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
-      </div>
-      <div class="flex items-center gap-1.5">
-        <label for="filterMes" class="text-xs text-sub font-medium">Filtrar por Mes:</label>
-        <select id="filterMes" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
-      </div>
-      <div class="flex items-center gap-1.5">
-        <label for="filterSemana" class="text-xs text-sub font-medium">Semana:</label>
-        <select id="filterSemana" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
-      </div>
+      <div class="flex items-center gap-1.5"><label for="filterGrupo" class="text-xs text-sub font-medium">Grupo:</label><select id="filterGrupo" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select></div>
+      <div class="flex items-center gap-1.5"><label for="filterMes" class="text-xs text-sub font-medium">Filtrar por Mes:</label><select id="filterMes" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select></div>
+      <div class="flex items-center gap-1.5"><label for="filterSemana" class="text-xs text-sub font-medium">Semana:</label><select id="filterSemana" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select></div>
       <button id="resetBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Cambiar archivo</button>
     </div>
   </header>
 
   <!-- Fila 1: KPIs -->
   <section class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-1 flex-shrink-0">
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Equipos Únicos</p>
-      <p id="kpiEquipos" class="text-sm font-black text-ink mono leading-tight my-0">0</p>
-      <p class="text-[7px] text-sub truncate">Activos en el proyecto</p>
-    </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <div class="flex items-center justify-between gap-1">
-        <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight break-words">% Disp. Mecánica</p>
-        <span id="kpiDispBadge" class="badge bg-green/10 text-green border border-green/30 shrink-0">ÓPTIMO</span>
-      </div>
-      <p id="kpiDisp" class="text-sm font-black text-green mono leading-tight my-0">0%</p>
-    </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight break-words">% Disp. Eq. en Obra</p>
-      <p id="kpiDispObra" class="text-sm font-black text-cyan mono leading-tight my-0">0%</p>
-    </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Horas Totales</p>
-      <p id="kpiTotalHoras" class="text-sm font-black text-ink mono leading-tight my-0">0</p>
-    </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Mayor Varado</p>
-      <p id="kpiClaseVarado" class="text-[9px] font-bold text-ink leading-tight my-0 break-words">—</p>
-      <p id="kpiClaseVaradoHrs" class="text-[7px] text-orange mono font-semibold truncate">0 h varadas</p>
-    </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Producción</p>
-      <p id="kpiHorasProd" class="text-sm font-black text-cyan mono leading-tight my-0">0</p>
-      <p class="text-[7px] text-sub mono truncate"><span id="kpiPctProd">0%</span> del total</p>
-    </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Disponibles</p>
-      <p id="kpiHorasDisp" class="text-sm font-black text-green mono leading-tight my-0">0</p>
-      <p class="text-[7px] text-sub mono truncate"><span id="kpiPctDisp">0%</span> del total</p>
-    </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Varadas</p>
-      <p id="kpiHorasVarado" class="text-sm font-black text-orange mono leading-tight my-0">0</p>
-      <p class="text-[7px] text-sub mono truncate"><span id="kpiPctVarado">0%</span> del total</p>
-    </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Equipos Varados</p>
-      <p id="kpiEquiposVarados" class="text-sm font-black text-red mono leading-tight my-0">0</p>
-      <p id="kpiEquiposVaradosSub" class="text-[7px] text-sub truncate">0% del total activos</p>
-    </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">% Utilización</p>
-      <p id="kpiUtilGlobal" class="text-sm font-black text-purple mono leading-tight my-0">0%</p>
-    </div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Equipos Únicos</p><p id="kpiEquipos" class="text-sm font-black text-ink mono leading-tight my-0">0</p><p class="text-[7px] text-sub truncate">Activos en el proyecto</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><div class="flex items-center justify-between gap-1"><p class="text-[8px] text-sub uppercase mono font-semibold leading-tight break-words">% Disp. Mecánica</p><span id="kpiDispBadge" class="badge bg-green/10 text-green border border-green/30 shrink-0">ÓPTIMO</span></div><p id="kpiDisp" class="text-sm font-black text-green mono leading-tight my-0">0%</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold leading-tight break-words">% Disp. Eq. en Obra</p><p id="kpiDispObra" class="text-sm font-black text-cyan mono leading-tight my-0">0%</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Horas Totales</p><p id="kpiTotalHoras" class="text-sm font-black text-ink mono leading-tight my-0">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Mayor Varado</p><p id="kpiClaseVarado" class="text-[9px] font-bold text-ink leading-tight my-0 break-words">—</p><p id="kpiClaseVaradoHrs" class="text-[7px] text-orange mono font-semibold truncate">0 h varadas</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Producción</p><p id="kpiHorasProd" class="text-sm font-black text-cyan mono leading-tight my-0">0</p><p class="text-[7px] text-sub mono truncate"><span id="kpiPctProd">0%</span> del total</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Disponibles</p><p id="kpiHorasDisp" class="text-sm font-black text-green mono leading-tight my-0">0</p><p class="text-[7px] text-sub mono truncate"><span id="kpiPctDisp">0%</span> del total</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Varadas</p><p id="kpiHorasVarado" class="text-sm font-black text-orange mono leading-tight my-0">0</p><p class="text-[7px] text-sub mono truncate"><span id="kpiPctVarado">0%</span> del total</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Equipos Varados</p><p id="kpiEquiposVarados" class="text-sm font-black text-red mono leading-tight my-0">0</p><p id="kpiEquiposVaradosSub" class="text-[7px] text-sub truncate">0% del total activos</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">% Utilización</p><p id="kpiUtilGlobal" class="text-sm font-black text-purple mono leading-tight my-0">0%</p></div>
   </section>
 
   <!-- Fila 2 -->
   <section class="grid grid-cols-1 md:grid-cols-9 gap-2 flex-[1.6] min-h-0">
     <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-1 flex-shrink-0">
-        <h3 class="font-semibold text-xs text-ink">Distribución de Horas Totales</h3>
-        <div id="tipoFilterBadge" class="hidden items-center gap-1.5">
-          <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Filtrado por: <span id="tipoFilterName" class="mono"></span></span>
-          <button id="clearTipoFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
-        </div>
-      </div>
+      <div class="flex items-center justify-between mb-1 flex-shrink-0"><h3 class="font-semibold text-xs text-ink">Distribución de Horas Totales</h3><div id="tipoFilterBadge" class="hidden items-center gap-1.5"><span class="badge bg-cyan/10 text-cyan border border-cyan/30">Filtrado por: <span id="tipoFilterName" class="mono"></span></span><button id="clearTipoFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button></div></div>
       <div class="flex-1 relative min-h-0"><canvas id="chartDonut"></canvas></div>
     </div>
     <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-1 flex-shrink-0">
-        <h3 class="font-semibold text-xs text-ink truncate">Cantidad Equipos por Clase</h3>
-        <button id="clearClaseFilter" class="hidden text-[10px] text-red hover:underline font-medium shrink-0">Quitar ✕</button>
-      </div>
+      <div class="flex items-center justify-between mb-1 flex-shrink-0"><h3 class="font-semibold text-xs text-ink truncate">Cantidad Equipos por Clase</h3><button id="clearClaseFilter" class="hidden text-[10px] text-red hover:underline font-medium shrink-0">Quitar ✕</button></div>
       <div id="wrapClase" class="flex-1 min-h-0 border border-border rounded flex flex-col overflow-hidden">
-        <div class="flex-1 min-h-0 overflow-hidden">
-          <table id="tblClaseTable" class="w-full text-left text-sm border-collapse">
-            <thead class="bg-panel2 text-ink border-b border-border sticky top-0 z-10">
-              <tr><th class="p-1.5 uppercase font-bold tracking-wide">Equipo</th><th class="p-1.5 text-right uppercase font-bold tracking-wide">Cantidad</th></tr>
-            </thead>
-            <tbody id="tblClase"></tbody>
-          </table>
-        </div>
-        <table class="w-full text-left text-sm flex-shrink-0 border-t-2 border-border">
-          <tbody><tr class="bg-panel2 font-bold"><td id="tblClaseTotalLabel" class="p-1.5 text-ink uppercase">TOTAL</td><td id="tblClaseTotal" class="p-1.5 text-right mono text-ink">0</td></tr></tbody>
-        </table>
+        <div class="flex-1 min-h-0 overflow-hidden"><table id="tblClaseTable" class="w-full text-left text-sm border-collapse"><thead class="bg-panel2 text-ink border-b border-border sticky top-0 z-10"><tr><th class="p-1.5 uppercase font-bold tracking-wide">Equipo</th><th class="p-1.5 text-right uppercase font-bold tracking-wide">Cantidad</th></tr></thead><tbody id="tblClase"></tbody></table></div>
+        <table class="w-full text-left text-sm flex-shrink-0 border-t-2 border-border"><tbody><tr class="bg-panel2 font-bold"><td id="tblClaseTotalLabel" class="p-1.5 text-ink uppercase">TOTAL</td><td id="tblClaseTotal" class="p-1.5 text-right mono text-ink">0</td></tr></tbody></table>
       </div>
     </div>
     <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-1 flex-shrink-0">
-        <h3 class="font-semibold text-xs text-ink">Diagnóstico de Equipos Varados</h3>
-        <div id="equipoFilterBadge" class="hidden items-center gap-1.5">
-          <span class="badge bg-purple/10 text-purple border border-purple/30">Equipo: <span id="equipoFilterName" class="mono"></span></span>
-          <button id="clearEquipoFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
-        </div>
-      </div>
+      <div class="flex items-center justify-between mb-1 flex-shrink-0"><h3 class="font-semibold text-xs text-ink">Diagnóstico de Equipos Varados</h3><div id="equipoFilterBadge" class="hidden items-center gap-1.5"><span class="badge bg-purple/10 text-purple border border-purple/30">Equipo: <span id="equipoFilterName" class="mono"></span></span><button id="clearEquipoFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button></div></div>
       <div id="wrapVarados" class="overflow-hidden flex-1 min-h-0 border border-border rounded">
-        <table id="tblVaradosTable" class="w-full text-left text-[13px]">
-          <thead class="bg-panel2 text-sub uppercase mono border-b border-border">
-            <tr><th class="p-1.5">Equipo</th><th class="p-1.5">Clase</th><th class="p-1.5 text-right">Hrs Varado</th><th class="p-1.5 text-right">% Impacto</th><th class="p-1.5">Causa Contextualizada</th></tr>
-          </thead>
-          <tbody id="tblVarados" class="divide-y divide-border"></tbody>
-        </table>
+        <table id="tblVaradosTable" class="w-full text-left text-[13px]"><thead class="bg-panel2 text-sub uppercase mono border-b border-border"><tr><th class="p-1.5">Equipo</th><th class="p-1.5">Clase</th><th class="p-1.5 text-right">Hrs Varado</th><th class="p-1.5 text-right">% Impacto</th><th class="p-1.5">Causa Contextualizada</th></tr></thead><tbody id="tblVarados" class="divide-y divide-border"></tbody></table>
       </div>
     </div>
   </section>
@@ -188,45 +103,26 @@
   <!-- Fila 3 -->
   <section class="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-[2.6] min-h-0">
     <div class="lg:col-span-8 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-0.5 flex-shrink-0">
-        <h3 class="font-semibold text-[11px] text-ink">Relación Trabajado - Varado - Disponible por Grupo de Equipos</h3>
-        <div id="claseChartFilterBadge" class="hidden items-center gap-1.5">
-          <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Clase: <span id="claseChartFilterName" class="mono"></span></span>
-          <button id="clearClaseChartFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
-        </div>
-      </div>
+      <div class="flex items-center justify-between mb-0.5 flex-shrink-0"><h3 class="font-semibold text-[11px] text-ink">Relación Trabajado - Varado - Disponible por Grupo de Equipos</h3><div id="claseChartFilterBadge" class="hidden items-center gap-1.5"><span class="badge bg-cyan/10 text-cyan border border-cyan/30">Clase: <span id="claseChartFilterName" class="mono"></span></span><button id="clearClaseChartFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button></div></div>
       <div id="wrapChartResumen" class="flex-1 relative min-h-0 overflow-hidden"><canvas id="chartResumen"></canvas></div>
     </div>
     <div class="lg:col-span-4 flex flex-col gap-2 min-h-0">
       <div class="flex-[1.5] bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-        <div class="flex items-center justify-between mb-1 flex-shrink-0">
-          <h3 class="font-semibold text-xs text-ink">% Utilización y % Disponibilidad por Semana</h3>
-          <div id="semanaFilterBadge" class="hidden items-center gap-1.5">
-            <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Semana: <span id="semanaFilterName" class="mono"></span></span>
-            <button id="clearSemanaFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
-          </div>
-        </div>
+        <div class="flex items-center justify-between mb-1 flex-shrink-0"><h3 class="font-semibold text-xs text-ink">% Utilización y % Disponibilidad por Semana</h3><div id="semanaFilterBadge" class="hidden items-center gap-1.5"><span class="badge bg-cyan/10 text-cyan border border-cyan/30">Semana: <span id="semanaFilterName" class="mono"></span></span><button id="clearSemanaFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button></div></div>
         <div id="wrapChartSemana" class="flex-1 relative min-h-[130px]"><canvas id="chartSemana"></canvas></div>
       </div>
       <div class="flex-1 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-        <div class="flex items-center justify-between mb-1 flex-shrink-0">
-          <h3 class="font-semibold text-xs text-ink">Desviaciones vs. Promedio Semanal</h3>
-        </div>
+        <div class="flex items-center justify-between mb-1 flex-shrink-0"><h3 class="font-semibold text-xs text-ink">Desviaciones vs. Promedio Semanal</h3></div>
         <p class="text-[9px] text-sub mb-1 flex-shrink-0">Prom. %Disp: <span id="promDispLabel" class="mono font-semibold text-ink">0%</span> · Prom. %Util: <span id="promUtilLabel" class="mono font-semibold text-ink">0%</span></p>
         <div id="wrapDesviacion" class="flex-1 min-h-0 border border-border rounded overflow-hidden flex flex-col">
-          <table id="tblDesviacionTable" class="w-full text-left text-[10px]">
-            <thead class="bg-panel2 text-sub uppercase mono border-b border-border sticky top-0 z-10">
-              <tr><th class="p-1">Semana</th><th class="p-1 text-right">%Disp</th><th class="p-1 text-right">Desviación</th></tr>
-            </thead>
-            <tbody id="tblDesviacion" class="divide-y divide-border"></tbody>
-          </table>
+          <table id="tblDesviacionTable" class="w-full text-left text-[10px]"><thead class="bg-panel2 text-sub uppercase mono border-b border-border sticky top-0 z-10"><tr><th class="p-1">Semana</th><th class="p-1 text-right">%Disp</th><th class="p-1 text-right">Desviación</th></tr></thead><tbody id="tblDesviacion" class="divide-y divide-border"></tbody></table>
         </div>
       </div>
     </div>
   </section>
 </div>
 
-<!-- SCRIPT DE PROCESAMIENTO -->
+<!-- SCRIPT DE PROCESAMIENTO ROBUSTO -->
 <script>
 (function(){
   const CENTRO_FIJO = "EPC - VIA LACTEA";
@@ -249,7 +145,7 @@
     const el = $('loadError');
     el.textContent = msg;
     el.classList.remove('hidden');
-    $('loaderText').textContent = 'No se pudo cargar el archivo automáticamente. Selecciona uno manualmente:';
+    $('loaderText').textContent = 'No se pudo procesar el contenido del archivo. Detalle:';
   }
 
   function clearLoadError(){
@@ -261,7 +157,7 @@
     const excelUrl = "./Analisis_pwq.xlsx";
     fetch(excelUrl)
       .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} - No se encontró './Analisis_pwq.xlsx'`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} - No se encontró el archivo.`);
         return response.arrayBuffer();
       })
       .then(buffer => {
@@ -270,7 +166,7 @@
       })
       .catch(err => {
         console.warn("Carga automática falló:", err);
-        showLoadError(`Error de carga automática: ${err.message}. Asegúrate de que 'Analisis_pwq.xlsx' esté en la raíz del repositorio de GitHub con mayúsculas/minúsculas exactas.`);
+        showLoadError(`Error: ${err.message}. Verifica que 'Analisis_pwq.xlsx' esté en la raíz del repositorio.`);
       });
   });
 
@@ -313,21 +209,17 @@
   }
 
   function procesarWorkbook(wb){
-    const targetSheetName = wb.SheetNames.find(s => normalizeStr(s) === normalizeStr('Digitacion')) || wb.SheetNames[0];
+    // Busca la pestaña "Digitacion" o toma la primera disponible de forma automática
+    const targetSheetName = wb.SheetNames.find(s => normalizeStr(s).includes('digitacion')) || wb.SheetNames[0];
     const sheet = wb.Sheets[targetSheetName];
 
     if (!sheet) {
-      showLoadError('No se encontró la pestaña "Digitacion" en el archivo Excel.');
+      showLoadError('El archivo Excel no contiene hojas válidas.');
       return;
     }
 
-    let options = { defval: '', raw: true };
-    if (sheet['!tables'] && Array.isArray(sheet['!tables'])) {
-      const targetTable = sheet['!tables'].find(t => normalizeStr(t.name || t.Name) === normalizeStr('Digitacion_2'));
-      if (targetTable && targetTable.ref) options.range = targetTable.ref;
-    }
-
-    const json = XLSX.utils.sheet_to_json(sheet, options);
+    // Lee los datos de la hoja completa sin exigir formato estricto de tablas de Excel
+    const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
     processData(json);
   }
 
@@ -361,7 +253,7 @@
 
   function processData(json){
     if (!json.length) {
-      showLoadError('La tabla "Digitacion_2" o la pestaña seleccionada está vacía.');
+      showLoadError('El archivo Excel está completamente vacío.');
       return;
     }
 
@@ -385,7 +277,9 @@
 
     const rows = [];
     json.forEach(r => {
-      if (r[kCentro] && normalizeStr(r[kCentro]) !== normalizeStr(CENTRO_FIJO)) return;
+      // Si el centro no coincide exactamente, permite continuar si la columna está vacía para evitar bloqueos
+      if (r[kCentro] && String(r[kCentro]).trim() !== '' && normalizeStr(r[kCentro]) !== normalizeStr(CENTRO_FIJO)) return;
+      
       const fecha = parseFecha(r[kFecha]);
       const equipo = String(r[kEquipo] ?? '').trim();
       if (!equipo) return;
@@ -432,7 +326,7 @@
     });
 
     if (!rows.length) {
-      showLoadError(`No se encontraron registros válidos para el centro ${CENTRO_FIJO}.`);
+      showLoadError('No se encontraron filas con datos válidos en el archivo.');
       return;
     }
 
@@ -785,7 +679,7 @@
         labels,
         datasets: [
           { label: '% Trabajado', data: pctTrabajado, backgroundColor: '#1E3A8A', stack: 'total', datalabels: datalabelComun('#FFFFFF') },
-          { label: '% Varado', data: pctVarado, backgroundColor: '#38BDF8', stack: 'total', datalabelComun: datalabelComun('#0F172A'), datalabels: datalabelComun('#0F172A') },
+          { label: '% Varado', data: pctVarado, backgroundColor: '#38BDF8', stack: 'total', datalabels: datalabelComun('#0F172A') },
           { label: '% Disponible', data: pctDisponible, backgroundColor: '#94A3B8', stack: 'total', datalabels: datalabelComun('#FFFFFF') }
         ]
       },
