@@ -43,7 +43,7 @@
   <div class="max-w-md w-full text-center bg-panel p-6 rounded-xl border border-border shadow-sm">
     <div id="spinner" class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan mb-3"></div>
     <h1 class="text-xl font-bold text-ink mb-1">Cargando Informe Ejecutivo...</h1>
-    <p class="text-sub text-xs mb-4">Selecciona tu archivo de Excel para comenzar:</p>
+    <p class="text-sub text-xs mb-4">Leyendo pestaña <strong class="text-ink">Digitacion</strong> desde <code class="text-cyan">Analisis_pwq.xlsx</code> o selecciona tu archivo:</p>
 
     <div class="mb-4">
       <label for="fileInput" class="block w-full cursor-pointer bg-cyan/10 hover:bg-cyan/25 border border-cyan/30 text-cyan text-xs font-semibold py-3 px-4 rounded-lg transition-colors">
@@ -52,7 +52,6 @@
       <input type="file" id="fileInput" accept=".xlsx, .xls" class="hidden">
     </div>
 
-    <!-- Caja de errores detallados -->
     <div id="loadError" class="hidden text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left max-h-40 overflow-y-auto"></div>
   </div>
 </div>
@@ -63,6 +62,7 @@
     <div class="flex items-center gap-2">
       <div class="w-6 h-6 rounded bg-gradient-to-br from-cyan to-purple flex items-center justify-center font-bold text-white text-xs">IE</div>
       <h1 class="font-bold text-xs md:text-sm text-ink leading-none">Informe Ejecutivo — Disponibilidad y Eficiencia de Equipos</h1>
+      <span class="badge bg-green/10 text-green border border-green/30 text-[10px]">Pestaña: Digitacion</span>
     </div>
     <div class="flex items-center gap-3">
       <select id="filterGrupo" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink"></select>
@@ -72,11 +72,9 @@
     </div>
   </header>
 
+  <!-- Fila 1: KPIs -->
   <section class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-1 flex-shrink-0">
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold">Equipos Únicos</p>
-      <p id="kpiEquipos" class="text-sm font-black text-ink mono">0</p>
-    </div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Equipos Únicos</p><p id="kpiEquipos" class="text-sm font-black text-ink mono">0</p></div>
     <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
       <div class="flex items-center justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Disp. Mecánica</p><span id="kpiDispBadge" class="badge bg-green/10 text-green border border-green/30">ÓPTIMO</span></div>
       <p id="kpiDisp" class="text-sm font-black text-green mono">0%</p>
@@ -91,10 +89,11 @@
     <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Utilización</p><p id="kpiUtilGlobal" class="text-sm font-black text-purple mono">0%</p></div>
   </section>
 
+  <!-- Fila 2: Gráfica y Tablas -->
   <section class="grid grid-cols-1 md:grid-cols-9 gap-2 flex-[1.6] min-h-0">
     <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Distribución Horas</h3><div class="flex-1 relative min-h-0"><canvas id="chartDonut"></canvas></div></div>
     <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Equipos por Clase</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-sm"><tbody id="tblClase"></tbody></table></div></div>
-    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Equipos Varados</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-xs"><tbody id="tblVarados"></tbody></table></div></div>
+    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Diagnóstico Equipos Varados</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-xs"><tbody id="tblVarados"></tbody></table></div></div>
   </section>
 </div>
 
@@ -119,10 +118,10 @@
     $('loaderScreen').classList.remove('hidden');$('loadError').classList.add('hidden');
   });
 
+  // Carga manual mediante input de archivo
   $('fileInput').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
     const reader = new FileReader();
     reader.onload = function(evt) {
       try {
@@ -133,9 +132,28 @@
         showLoadError(`<strong>Error al procesar el Excel:</strong> ${err.message}`);
       }
     };
-    reader.onerror = () => showLoadError("Error al leer el archivo desde el disco.");
     reader.readAsArrayBuffer(file);
   });
+
+  // Intento de carga automática al abrir la página buscando Analisis_pwq.xlsx
+  async function tryAutoLoad() {
+    try {
+      const res = await fetch('Analisis_pwq.xlsx', { cache: 'no-cache' });
+      if (res.ok) {
+        const arrayBuffer = await res.arrayBuffer();
+        const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
+        processWorkbook(wb);
+      }
+    } catch (e) {
+      // Si falla el fetch automático, el usuario puede usar el botón manual
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', tryAutoLoad);
+
+  function normalizeStr(v){
+    return String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
 
   function processWorkbook(wb){
     if (!wb.SheetNames || wb.SheetNames.length === 0) {
@@ -143,13 +161,13 @@
       return;
     }
 
-    // Tomar la primera pestaña o la que tenga datos
-    const sheetName = wb.SheetNames[0];
-    const sheet = wb.Sheets[sheetName];
+    // Buscar específicamente la pestaña "Digitacion"
+    const targetSheetName = wb.SheetNames.find(s => normalizeStr(s).includes('digitac')) || wb.SheetNames[0];
+    const sheet = wb.Sheets[targetSheetName];
     const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
 
     if (!json || json.length === 0) {
-      showLoadError(`La pestaña "${sheetName}" está vacía.`);
+      showLoadError(`La pestaña "${targetSheetName}" está vacía o no contiene filas.`);
       return;
     }
 
@@ -180,7 +198,7 @@
     try {
       const sample = json[0] || {};
       const keys = Object.keys(sample);
-      const findKey = (cands) => keys.find(k => cands.some(c => k.toLowerCase().includes(c.toLowerCase()))) || cands[0];
+      const findKey = (cands) => keys.find(k => cands.some(c => normalizeStr(k).includes(normalizeStr(c)))) || cands[0];
 
       const kEquipo = findKey(['Equipo', 'Identificación', 'Operario']);
       const kClase = findKey(['Clase', 'Centro', 'Bodega']);
@@ -208,7 +226,7 @@
       });
 
       if (rows.length === 0) {
-        showLoadError(`No se pudieron extraer registros válidos. Columnas detectadas en tu archivo: <br><code>${keys.join(', ')}</code>`);
+        showLoadError(`No se pudieron extraer registros válidos de la pestaña Digitacion. Columnas encontradas: <br><code>${keys.join(', ')}</code>`);
         return;
       }
 
@@ -216,7 +234,7 @@
       $('loaderScreen').classList.add('hidden');$('dashboard').classList.remove('hidden');
       render();
     } catch (err) {
-      showLoadError(`Error mapeando las columnas: ${err.message}`);
+      showLoadError(`Error procesando los datos: ${err.message}`);
     }
   }
 
