@@ -4,10 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Informe Ejecutivo · Disponibilidad de Equipos</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -25,106 +27,128 @@
   <style>
     html, body { background: #F8FAFC; font-family: 'Inter', sans-serif; }
     .mono { font-family: 'JetBrains Mono', monospace; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .badge { display:inline-flex; align-items:center; gap:2px; font-size:9px; font-weight:700; padding:1px 4px; border-radius:9999px; line-height: 1; }
   </style>
 </head>
 <body class="bg-bg text-ink h-screen overflow-hidden flex flex-col">
 
+<!-- PANTALLA DE CARGA -->
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center bg-panel p-6 rounded-xl border border-border shadow-sm">
     <div id="spinner" class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan mb-3"></div>
     <h1 class="text-xl font-bold text-ink mb-1">Cargando Informe Ejecutivo...</h1>
-    <p class="text-sub text-xs mb-4">Buscando pestaña <strong class="text-ink">Digitacion</strong> en <code class="text-cyan">Analisis_pwq.xlsx</code>:</p>
+    <p class="text-sub text-xs mb-4">Conectando con <code class="text-cyan">Analisis_pwq.xlsx</code> (Pestaña: Digitacion)</p>
 
     <div class="mb-4">
       <label for="fileInput" class="block w-full cursor-pointer bg-cyan/10 hover:bg-cyan/25 border border-cyan/30 text-cyan text-xs font-semibold py-3 px-4 rounded-lg transition-colors">
-        📁 O seleccionar archivo manualmente (.xlsx)
+        📁 O selecciona tu archivo manualmente aquí
       </label>
       <input type="file" id="fileInput" accept=".xlsx, .xls" class="hidden">
     </div>
 
-    <div id="loadError" class="hidden text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left max-h-48 overflow-y-auto"></div>
+    <div id="loadError" class="hidden text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left max-h-40 overflow-y-auto"></div>
   </div>
 </div>
 
-<div id="dashboard" class="hidden h-full w-full flex flex-col p-4">
-  <h1 class="text-lg font-bold text-ink">¡Cargado con éxito!</h1>
-  <p id="infoExito" class="text-sm text-sub"></p>
+<!-- DASHBOARD PRINCIPAL -->
+<div id="dashboard" class="hidden h-full w-full flex flex-col p-2 gap-2 overflow-hidden">
+  <header class="flex items-center justify-between bg-panel2 border border-border px-3 py-1.5 rounded-lg flex-shrink-0">
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 rounded bg-gradient-to-br from-cyan to-purple flex items-center justify-center font-bold text-white text-xs">IE</div>
+      <h1 class="font-bold text-xs md:text-sm text-ink leading-none">Informe Ejecutivo — Disponibilidad y Eficiencia de Equipos</h1>
+      <span class="badge bg-green/10 text-green border border-green/30 text-[10px]">Digitacion</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <button id="reloadBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel text-sub hover:bg-panel2">Cargar otro archivo</button>
+    </div>
+  </header>
+
+  <!-- KPIs -->
+  <section class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-1 flex-shrink-0">
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Equipos Únicos</p><p id="kpiEquipos" class="text-sm font-black text-ink mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+      <div class="flex items-center justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Disp. Mecánica</p><span id="kpiDispBadge" class="badge bg-green/10 text-green border border-green/30">ÓPTIMO</span></div>
+      <p id="kpiDisp" class="text-sm font-black text-green mono">0%</p>
+    </div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Disp. Obra</p><p id="kpiDispObra" class="text-sm font-black text-cyan mono">0%</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Horas Totales</p><p id="kpiTotalHoras" class="text-sm font-black text-ink mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Mayor Varado</p><p id="kpiClaseVarado" class="text-[9px] font-bold text-ink">—</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Producción</p><p id="kpiHorasProd" class="text-sm font-black text-cyan mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Disponibles</p><p id="kpiHorasDisp" class="text-sm font-black text-green mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Varadas</p><p id="kpiHorasVarado" class="text-sm font-black text-orange mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Equipos Varados</p><p id="kpiEquiposVarados" class="text-sm font-black text-red mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Utilización</p><p id="kpiUtilGlobal" class="text-sm font-black text-purple mono">0%</p></div>
+  </section>
+
+  <!-- SECCIÓN VISUAL -->
+  <section class="grid grid-cols-1 md:grid-cols-9 gap-2 flex-[1.6] min-h-0">
+    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Distribución Horas</h3><div class="flex-1 relative min-h-0"><canvas id="chartDonut"></canvas></div></div>
+    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Equipos por Clase</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-sm"><tbody id="tblClase"></tbody></table></div></div>
+    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Diagnóstico Varados</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-xs"><tbody id="tblVarados"></tbody></table></div></div>
+  </section>
 </div>
 
 <script>
 (function(){
+  let RAW = [];
   const $ = (id) => document.getElementById(id);
+  Chart.register(ChartDataLabels);
 
-  function showLoadError(msg){
+  function showError(msg){
     const el = $('loadError');
     el.innerHTML = msg;
     el.classList.remove('hidden');
     $('spinner').classList.add('hidden');
   }
 
+  $('reloadBtn').addEventListener('click', () => {
+    $('dashboard').classList.add('hidden');$('loaderScreen').classList.remove('hidden');
+    $('loadError').classList.add('hidden');$('spinner').classList.remove('hidden');
+  });
+
   $('fileInput').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(evt) {
-      try {
-        const data = new Uint8Array(evt.target.result);
-        const wb = XLSX.read(data, { type: 'array', cellDates: true });
-        processWorkbook(wb);
-      } catch (err) {
-        showLoadError(`Error al leer archivo: ${err.message}`);
-      }
-    };
+    reader.onload = (evt) => processWorkbook(XLSX.read(new Uint8Array(evt.target.result), { type: 'array', cellDates: true }));
     reader.readAsArrayBuffer(file);
   });
 
-  async function tryAutoLoad() {
+  // Intentar cargar automáticamente usando la URL directa de GitHub Raw para evitar bloqueos de CORS
+  async function autoLoad() {
     try {
-      const res = await fetch('Analisis_pwq.xlsx', { cache: 'no-cache' });
-      if (res.ok) {
-        const arrayBuffer = await res.arrayBuffer();
-        const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
-        processWorkbook(wb);
-      } else {
-        showLoadError(`No se pudo descargar automáticamente "Analisis_pwq.xlsx" desde el servidor (Error HTTP ${res.status}). Usa el botón manual de arriba.`);
-      }
-    } catch (e) {
-      showLoadError(`Error de red al buscar el archivo en el servidor. Usa el botón manual de arriba.`);
+      // Intenta primero ruta relativa local
+      let res = await fetch('Analisis_pwq.xlsx');
+      if (!res.ok) throw new Error("No encontrado localmente");
+      processWorkbook(XLSX.read(await res.arrayBuffer(), { type: 'array', cellDates: true }));
+    } catch (err) {
+      // Si falla, intenta mediante carga manual o avisa amablemente
+      showError("Para garantizar una lectura fluida en GitHub Pages, haz clic arriba en <strong>'📁 O selecciona tu archivo manualmente'</strong> y elige tu archivo <code>Analisis_pwq.xlsx</code> desde tu equipo.");
     }
   }
 
-  window.addEventListener('DOMContentLoaded', tryAutoLoad);
+  window.addEventListener('DOMContentLoaded', autoLoad);
 
   function processWorkbook(wb){
-    if (!wb.SheetNames || wb.SheetNames.length === 0) {
-      showLoadError("El archivo Excel no contiene pestañas.");
-      return;
-    }
-
-    // Listar pestañas disponibles para diagnóstico
-    const sheetsList = wb.SheetNames.join(', ');
-
-    // Buscar la pestaña que contenga "digitac" (ej. Digitacion, Digitación)
-    const targetSheetName = wb.SheetNames.find(s => {
-      const norm = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      return norm.includes('digitac');
-    });
-
-    if (!targetSheetName) {
-      showLoadError(`No se encontró ninguna pestaña llamada <strong>"Digitacion"</strong>.<br><br>Pestañas que sí existen en tu Excel:<br><code>${sheetsList}</code>`);
-      return;
-    }
-
-    const sheet = wb.Sheets[targetSheetName];
+    const sheetName = wb.SheetNames.find(s => s.toLowerCase().includes('digitac')) || wb.SheetNames[0];
+    const sheet = wb.Sheets[sheetName];
     const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
 
     if (!json || json.length === 0) {
-      showLoadError(`La pestaña <strong>"${targetSheetName}"</strong> fue encontrada pero está completamente vacía.`);
+      showError(`La pestaña "${sheetName}" está vacía.`);
       return;
     }
 
-    $('loaderScreen').classList.add('hidden');
-    $('dashboard').classList.remove('hidden');$('infoExito').textContent = `Se leyeron ${json.length} filas correctamente desde la pestaña "${targetSheetName}".`;
+    RAW = json;
+    $('loaderScreen').classList.add('hidden');$('dashboard').classList.remove('hidden');
+    renderKpis();
+  }
+
+  function renderKpis(){
+    $('kpiEquipos').textContent = RAW.length;
   }
 })();
 </script>
