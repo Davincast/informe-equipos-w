@@ -154,7 +154,7 @@
   }
 
   window.addEventListener('DOMContentLoaded', () => {
-    const excelUrl = "./Analisis_pwq.xlsx";
+    const excelUrl = "Analisis_pwq.xlsx?v=" + new Date().getTime();";
     fetch(excelUrl)
       .then(response => {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status} - No se encontró el archivo.`);
