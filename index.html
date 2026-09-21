@@ -65,7 +65,7 @@
     <div class="flex items-center gap-2">
       <div class="w-6 h-6 rounded bg-gradient-to-br from-cyan to-purple flex items-center justify-center font-bold text-white text-xs">IE</div>
       <h1 class="font-bold text-xs md:text-sm text-ink leading-none">Informe Ejecutivo — Disponibilidad y Eficiencia de Equipos</h1>
-      <span class="badge bg-green/10 text-green border border-green/30 text-[10px]">EPC - VIA LACTEA</span>
+      <span class="badge bg-green/10 text-green border border-green/30 text-[10px]">INFORME GENERAL</span>
     </div>
 
     <div class="flex items-center gap-3">
@@ -272,7 +272,6 @@
 
 <script>
 (function(){
-  const CENTRO_FIJO = "EPC - VIA LACTEA";
   const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const COLORS = { prod:'#0891B2', disp:'#059669', varado:'#EA580C', orange:'#EA580C', purple:'#7C3AED', green:'#059669' };
 
@@ -336,7 +335,6 @@
   $('clearClaseChartFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
   $('clearSemanaFilter').addEventListener('click', () => { $('filterSemana').value = ''; render(); });
 
-  // CARGA AUTOMÁTICA MEJORADA: Prueba nombres comunes de archivo en GitHub Pages
   async function loadExcelFromUrl() {
     clearLoadError();
     const possibleNames = ["Analisis_pwq.xlsx", "Analisis pwq.xlsx", "Analisis%20pwq.xlsx"];
@@ -371,7 +369,7 @@
 
       const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
       if (!json || json.length === 0) {
-        showLoadError('La pestaña "Digitacion" fue encontrada pero no contiene filas con datos válidos.');
+        showLoadError('La pestaña "Digitacion" fue encontrada pero no contiene datos.');
         return;
       }
 
@@ -412,41 +410,33 @@
   }
 
   function processData(json){
-    const sample = json[0];
-    const findKey = (t) => Object.keys(sample).find(k => normalizeStr(k) === normalizeStr(t)) || t;
+    const sample = json[0] || {};
+    const keys = Object.keys(sample);
 
-    const kCentro = findKey('Descripción Centro');
-    const kEquipo = findKey('Equipo');
-    const kClase = findKey('Clase');
-    const kDesTipo = findKey('des_tipo');
-    const kHoras = findKey('horas');
-    const kFecha = findKey('fecha');
-    const kNotas = findKey('notas');
-    const kSemana = findKey('Semana');
+    const findKey = (candidates) => keys.find(k => candidates.some(c => normalizeStr(k).includes(normalizeStr(c)))) || candidates[0];
 
-    const kHorasDisp = findKey('Horas_Disponibles');
-    const kHorasProd = findKey('Horas_Producción');
-    const kHorasVarado = findKey('Horas_Varado');
+    const kEquipo = findKey(['Equipo', 'Nombres Operario', 'Identificación']);
+    const kClase = findKey(['Clase', 'Descripción Centro', 'bodega']);
+    const kDesTipo = findKey(['des_tipo', 'turno']);
+    const kHoras = findKey(['horas', 'horometro_final', 'horometro_inicial']);
+    const kFecha = findKey(['fecha', 'Fecha']);
+    const kNotas = findKey(['notas', 'Notas', 'Observacion']);
+    const kSemana = findKey(['Semana', 'semana']);
 
-    const normalizeLoose = (v) => normalizeStr(v).replace(/[^a-z0-9]/g, '');
-    const kSubgrupo = Object.keys(sample).find(k => normalizeLoose(k) === normalizeLoose('Analisis.Subgrupo'))
-      || Object.keys(sample).find(k => normalizeLoose(k).includes('subgrupo'));
+    const kHorasDisp = findKey(['Horas_Disponibles', 'horometro_final']);
+    const kHorasProd = findKey(['Horas_Producción']);
+    const kHorasVarado = findKey(['Horas_Varado']);
 
     const rows = [];
     json.forEach(r => {
-      if (r[kCentro] && normalizeStr(r[kCentro]) !== normalizeStr(CENTRO_FIJO)) return;
       const fecha = parseFecha(r[kFecha]);
-
       const equipo = String(r[kEquipo] ?? '').trim();
-      if (!equipo) return;
 
       const mesKey = fecha ? `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}` : 'Sin fecha';
       const mesLabel = fecha ? `${MESES[fecha.getMonth()]} ${String(fecha.getFullYear()).slice(-2)}` : 'Sin fecha';
       mesLabels[mesKey] = mesLabel;
 
-      const fechaDia = fecha ? `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}-${String(fecha.getDate()).padStart(2,'0')}` : null;
-
-      const semanaCruda = kSemana ? r[kSemana] : undefined;
+      const semanaCruda = r[kSemana];
       let semana, semanaOrder;
       if (semanaCruda !== undefined && String(semanaCruda).trim() !== '') {
         semana = String(semanaCruda).trim();
@@ -465,34 +455,33 @@
       const valProd = parseHoras(r[kHorasProd]);
       const valVarado = parseHoras(r[kHorasVarado]);
 
-      const clase = String(r[kClase] ?? 'Sin Clase').trim() || 'Sin Clase';
-      const grupo = clase;
-      const subgrupo = kSubgrupo ? (String(r[kSubgrupo] ?? 'Sin Subgrupo').trim() || 'Sin Subgrupo') : 'Sin Subgrupo';
+      const clase = String(r[kClase] ?? 'General').trim() || 'General';
 
       if (valDisp > 0 || valProd > 0 || valVarado > 0) {
-        if (valProd > 0) rows.push({ equipo, clase, grupo, subgrupo, desTipo: 'Producción', horas: valProd, mesKey, mesLabel, fechaDia, semana, semanaOrder, notas: '' });
-        if (valDisp > 0) rows.push({ equipo, clase, grupo, subgrupo, desTipo: 'Disponible', horas: valDisp, mesKey, mesLabel, fechaDia, semana, semanaOrder, notas: '' });
-        if (valVarado > 0) rows.push({ equipo, clase, grupo, subgrupo, desTipo: 'Varado', horas: valVarado, mesKey, mesLabel, fechaDia, semana, semanaOrder, notas: String(r[kNotas] ?? '').trim() });
+        if (valProd > 0) rows.push({ equipo: equipo || 'Equipo General', clase, grupo: clase, desTipo: 'Producción', horas: valProd, mesKey, mesLabel, semana, semanaOrder, notas: '' });
+        if (valDisp > 0) rows.push({ equipo: equipo || 'Equipo General', clase, grupo: clase, desTipo: 'Disponible', horas: valDisp, mesKey, mesLabel, semana, semanaOrder, notas: '' });
+        if (valVarado > 0) rows.push({ equipo: equipo || 'Equipo General', clase, grupo: clase, desTipo: 'Varado', horas: valVarado, mesKey, mesLabel, semana, semanaOrder, notas: String(r[kNotas] ?? '').trim() });
       } else {
-        rows.push({
-          equipo,
-          clase,
-          grupo,
-          subgrupo,
-          desTipo: String(r[kDesTipo] ?? '').trim(),
-          horas: parseHoras(r[kHoras]),
-          mesKey,
-          mesLabel,
-          fechaDia,
-          semana,
-          semanaOrder,
-          notas: String(r[kNotas] ?? '').trim()
-        });
+        const hVal = parseHoras(r[kHoras]);
+        if (hVal > 0 || equipo) {
+          rows.push({
+            equipo: equipo || 'Equipo General',
+            clase,
+            grupo: clase,
+            desTipo: String(r[kDesTipo] ?? 'Disponible').trim(),
+            horas: hVal || 1,
+            mesKey,
+            mesLabel,
+            semana,
+            semanaOrder,
+            notas: String(r[kNotas] ?? '').trim()
+          });
+        }
       }
     });
 
     if (!rows.length) {
-      showLoadError(`No se encontraron registros para el centro "${CENTRO_FIJO}".`);
+      showLoadError('No se encontraron registros de datos interpretables en el archivo.');
       return;
     }
 
@@ -543,9 +532,7 @@
       const matchSemana = excludeSemana || !s || r.semana === s;
       const matchEquipo = !selectedEquipo || r.equipo === selectedEquipo;
       const matchTipo = !selectedTipo || r.desTipo === selectedTipo;
-      const matchClaseTabla = !selectedClaseTabla ||
-        ((!selectedClaseTabla.subgrupo || r.subgrupo === selectedClaseTabla.subgrupo) &&
-         (!selectedClaseTabla.clase || r.clase === selectedClaseTabla.clase));
+      const matchClaseTabla = !selectedClaseTabla || r.clase === selectedClaseTabla.clase;
       return matchGrupo && matchMes && matchSemana && matchEquipo && matchTipo && matchClaseTabla;
     });
   }
@@ -784,7 +771,7 @@
 
   function renderChartResumen(data){
     const map = claseResumenMap(data);
-    let entries = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0])).filter(([, v]) => (v.prod + v.varado) > 0);
+    let entries = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0])).filter(([, v]) => (v.prod + v.varado + v.disp) > 0);
 
     const labels = entries.map(([k]) => k);
     const pctTrabajado = entries.map(([, v]) => { const h = v.disp + v.prod + v.varado; return h > 0 ? +((v.prod / h) * 100).toFixed(1) : 0; });
