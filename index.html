@@ -49,16 +49,11 @@
 <!-- LOADER SCREEN -->
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center">
-    <h1 class="text-2xl font-bold text-ink mb-2">Informe Ejecutivo de Equipos</h1>
-    <p class="text-sub text-xs mb-6">Carga el archivo <strong>Analisis pwq.xlsx</strong> (Pestaña <strong>Digitacion</strong>, Tabla <strong>Digitacion_2</strong>) para generar el panel.</p>
+    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan mb-4"></div>
+    <h1 class="text-xl font-bold text-ink mb-1">Cargando Informe Ejecutivo...</h1>
+    <p class="text-sub text-xs">Leyendo datos automáticamente desde <strong>Analisis pwq.xlsx</strong></p>
 
-    <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/60 transition-all p-8 cursor-pointer">
-      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
-      <div class="text-sm text-ink font-semibold">Selecciona o arrastra "Analisis pwq.xlsx"</div>
-      <div class="text-xs text-sub mt-1">.xlsx, .xls, .csv</div>
-    </label>
-
-    <div id="loadError" class="hidden mt-3 text-xs text-red bg-red/10 border border-red/30 rounded p-2"></div>
+    <div id="loadError" class="hidden mt-4 text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left"></div>
   </div>
 </div>
 
@@ -92,7 +87,7 @@
         <select id="filterSemana" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
       </div>
 
-      <button id="resetBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Cambiar archivo</button>
+      <button id="reloadBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Recargar Datos</button>
     </div>
   </header>
 
@@ -293,6 +288,7 @@
 <script>
 (function(){
   const CENTRO_FIJO = "EPC - VIA LACTEA";
+  const EXCEL_FILE_PATH = "Analisis pwq.xlsx"; // Archivo alojado en GitHub Pages
   const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const COLORS = { prod:'#0891B2', disp:'#059669', varado:'#EA580C', orange:'#EA580C', purple:'#7C3AED', green:'#059669' };
 
@@ -320,7 +316,7 @@
 
   function showLoadError(msg){
     const el = $('loadError');
-    el.textContent = msg;
+    el.innerHTML = msg;
     el.classList.remove('hidden');
   }
 
@@ -329,21 +325,14 @@
     $('loadError').classList.add('hidden');
   }
 
-  const dropZone = $('dropZone');
-  const fileInput = $('fileInput');
-
-  ['dragenter','dragover'].forEach(evt => dropZone.addEventListener(evt, e => e.preventDefault()));
-  dropZone.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
-  fileInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) handleFile(f); });
-
-  $('resetBtn').addEventListener('click', () => {
+  $('reloadBtn').addEventListener('click', () => {
     $('dashboard').classList.add('hidden');
     $('loaderScreen').classList.remove('hidden');
     clearLoadError();
-    fileInput.value = '';
     selectedEquipo = null;
     selectedTipo = null;
     selectedClaseTabla = null;
+    loadExcelFromUrl();
   });
 
   window.addEventListener('resize', () => {
@@ -382,37 +371,42 @@
     render();
   });
 
-  function handleFile(file){
+  // CARGA AUTOMÁTICA DEL ARCHIVO EXCEL DESDE EL SERVIDOR (GITHUB PAGES)
+  async function loadExcelFromUrl() {
     clearLoadError();
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
-        
-        const targetSheetName = wb.SheetNames.find(s => normalizeStr(s) === normalizeStr('Digitacion')) || wb.SheetNames[0];
-        const sheet = wb.Sheets[targetSheetName];
-
-        if (!sheet) {
-          showLoadError('No se encontró la pestaña "Digitacion" en el archivo Excel.');
-          return;
-        }
-
-        let options = { defval: '', raw: true };
-        if (sheet['!tables'] && Array.isArray(sheet['!tables'])) {
-          const targetTable = sheet['!tables'].find(t => normalizeStr(t.name || t.Name) === normalizeStr('Digitacion_2'));
-          if (targetTable && targetTable.ref) {
-            options.range = targetTable.ref;
-          }
-        }
-
-        const json = XLSX.utils.sheet_to_json(sheet, options);
-        processData(json);
-      } catch (err) {
-        showLoadError('Error procesando el archivo. Verifica que sea un Excel válido.');
+    try {
+      const response = await fetch(EXCEL_FILE_PATH, { cache: 'no-cache' });
+      if (!response.ok) {
+        throw new Error(`No se pudo encontrar el archivo "${EXCEL_FILE_PATH}" en la raíz del sitio.`);
       }
-    };
-    reader.readAsArrayBuffer(file);
+      const arrayBuffer = await response.arrayBuffer();
+      const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
+
+      const targetSheetName = wb.SheetNames.find(s => normalizeStr(s) === normalizeStr('Digitacion')) || wb.SheetNames[0];
+      const sheet = wb.Sheets[targetSheetName];
+
+      if (!sheet) {
+        showLoadError('No se encontró la pestaña "Digitacion" en el archivo Excel.');
+        return;
+      }
+
+      let options = { defval: '', raw: true };
+      if (sheet['!tables'] && Array.isArray(sheet['!tables'])) {
+        const targetTable = sheet['!tables'].find(t => normalizeStr(t.name || t.Name) === normalizeStr('Digitacion_2'));
+        if (targetTable && targetTable.ref) {
+          options.range = targetTable.ref;
+        }
+      }
+
+      const json = XLSX.utils.sheet_to_json(sheet, options);
+      processData(json);
+    } catch (err) {
+      showLoadError(`<strong>Error al cargar el archivo:</strong> ${err.message}<br><br>Asegúrate de que el archivo <strong>Analisis pwq.xlsx</strong> esté subido exactamente con ese nombre en tu repositorio.`);
+    }
   }
+
+  // Ejecutar carga automática al abrir la página
+  window.addEventListener('DOMContentLoaded', loadExcelFromUrl);
 
   function parseHoras(v){
     if (typeof v === 'number') return v;
@@ -528,7 +522,7 @@
     });
 
     if (!rows.length) {
-      showLoadError(`No se encontraron registros coincidentes en la tabla "Digitacion_2".`);
+      showLoadError(`No se encontraron registros coincidentes para el centro "${CENTRO_FIJO}" en la tabla.`);
       return;
     }
 
