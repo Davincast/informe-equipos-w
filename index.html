@@ -44,13 +44,19 @@
 </head>
 <body class="bg-bg text-ink h-screen overflow-hidden flex flex-col">
 
-<!-- PANTALLA DE CARGA INICIAL -->
+<!-- PANTALLA DE CARGA INICIAL CON RESPALDO MANUAL -->
 <div id="loadingStatus" class="h-full flex flex-col items-center justify-center px-4 bg-bg">
   <div class="max-w-md w-full text-center">
     <div class="w-12 h-12 border-4 border-cyan border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
     <h1 class="text-xl font-bold text-ink mb-1">Cargando Informe Ejecutivo...</h1>
-    <p class="text-sub text-xs">Leyendo automáticamente "Analisis pwq.xlsx"...</p>
-    <div id="loadError" class="hidden mt-3 text-xs text-red bg-red/10 border border-red/30 rounded p-2"></div>
+    <p class="text-sub text-xs mb-3">Leyendo automáticamente "Analisis pwq.xlsx"...</p>
+    
+    <div id="loadError" class="hidden text-xs text-red bg-red/10 border border-red/30 rounded p-3 mb-3 text-left"></div>
+    
+    <div id="manualUpload" class="hidden p-3 border border-border rounded bg-panel">
+      <p class="text-xs text-sub mb-2">O selecciona el archivo Excel desde tu equipo:</p>
+      <input type="file" id="fileInput" accept=".xlsx, .xls" class="text-xs text-ink file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-cyan file:text-white hover:file:bg-cyan/80 cursor-pointer"/>
+    </div>
   </div>
 </div>
 
@@ -166,7 +172,7 @@
         <button id="clearClaseFilter" class="hidden text-[10px] text-red hover:underline font-medium shrink-0">Quitar ✕</button>
       </div>
       <div id="wrapClase" class="flex-1 min-h-0 border border-border rounded flex flex-col overflow-hidden">
-        <div class="flex-1 min-h-0 overflow-hidden">
+        <div class="flex-1 min-h-0 overflow-y-auto">
           <table id="tblClaseTable" class="w-full text-left text-sm border-collapse">
             <thead class="bg-panel2 text-ink border-b border-border sticky top-0 z-10">
               <tr>
@@ -298,42 +304,57 @@
     const el = $('loadError');
     el.textContent = msg;
     el.classList.remove('hidden');
+    $('manualUpload').classList.remove('hidden');
   }
 
-  // CARGA AUTOMÁTICA DE EXCEL AL ABRIR LA PÁGINA
+  // CARGA AUTOMÁTICA O MANUAL DE EXCEL
   document.addEventListener('DOMContentLoaded', () => {
     fetch(ARCHIVO_EXCEL)
       .then(response => {
         if (!response.ok) {
-          throw new Error(`No se encontró el archivo "${ARCHIVO_EXCEL}". Verifica que esté subido en GitHub con ese nombre exacto.`);
+          throw new Error(`No se pudo cargar "${ARCHIVO_EXCEL}" automáticamente. Si estás abriendo el archivo localmente (file://), selecciona el archivo manualmente abajo.`);
         }
         return response.arrayBuffer();
       })
-      .then(buffer => {
-        const wb = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: true });
-        const targetSheetName = wb.SheetNames.find(s => normalizeStr(s) === normalizeStr('Digitacion')) || wb.SheetNames[0];
-        const sheet = wb.Sheets[targetSheetName];
-
-        if (!sheet) {
-          showLoadError('No se encontró la pestaña "Digitacion" en el archivo Excel.');
-          return;
-        }
-
-        let options = { defval: '', raw: true };
-        if (sheet['!tables'] && Array.isArray(sheet['!tables'])) {
-          const targetTable = sheet['!tables'].find(t => normalizeStr(t.name || t.Name) === normalizeStr('Digitacion_2'));
-          if (targetTable && targetTable.ref) {
-            options.range = targetTable.ref;
-          }
-        }
-
-        const json = XLSX.utils.sheet_to_json(sheet, options);
-        processData(json);
-      })
+      .then(buffer => parseExcelBuffer(buffer))
       .catch(err => {
         showLoadError(err.message);
       });
   });
+
+  $('fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => parseExcelBuffer(evt.target.result);
+    reader.readAsArrayBuffer(file);
+  });
+
+  function parseExcelBuffer(buffer) {
+    try {
+      const wb = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: true });
+      const targetSheetName = wb.SheetNames.find(s => normalizeStr(s) === normalizeStr('Digitacion')) || wb.SheetNames[0];
+      const sheet = wb.Sheets[targetSheetName];
+
+      if (!sheet) {
+        showLoadError('No se encontró la pestaña "Digitacion" en el archivo Excel.');
+        return;
+      }
+
+      let options = { defval: '', raw: true };
+      if (sheet['!tables'] && Array.isArray(sheet['!tables'])) {
+        const targetTable = sheet['!tables'].find(t => normalizeStr(t.name || t.Name) === normalizeStr('Digitacion_2'));
+        if (targetTable && targetTable.ref) {
+          options.range = targetTable.ref;
+        }
+      }
+
+      const json = XLSX.utils.sheet_to_json(sheet, options);
+      processData(json);
+    } catch (err) {
+      showLoadError('Error al leer el archivo Excel: ' + err.message);
+    }
+  }
 
   window.addEventListener('resize', () => {
     if (!$('dashboard').classList.contains('hidden')) render();
@@ -346,11 +367,9 @@
     }).observe(wrapChartSemanaEl);
   }
 
-  $('clearEquipoFilter').addEventListener('click', () => { selectedEquipo = null; render(); });
-  $('clearTipoFilter').addEventListener('click', () => { selectedTipo = null; render(); });
-  $('clearClaseFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
-  $('clearClaseChartFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
-  $('clearSemanaFilter').addEventListener('click', () => { $('filterSemana').value = ''; render(); });
+  $('clearEquipoFilter').addEventListener('click', () => { selectedEquipo = null; render(); });$('clearTipoFilter').addEventListener('click', () => { selectedTipo = null; render(); });
+  $('clearClaseFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });$('clearClaseChartFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
+  $('clearSemanaFilter').addEventListener('click', () => {$('filterSemana').value = ''; render(); });
 
   function parseHoras(v){
     if (typeof v === 'number') return v;
@@ -459,15 +478,14 @@
     });
 
     if (!rows.length) {
-      showLoadError('No se encontraron datos que coincidan.');
+      showLoadError('No se encontraron datos que coincidan con el filtro del centro.');
       return;
     }
 
     TOTAL_FLOTA = new Set(rows.map(r => r.equipo)).size;
     RAW = agruparYCalcularHoras(rows);
     initFilters();
-    $('loadingStatus').classList.add('hidden');
-    $('dashboard').classList.remove('hidden');
+    $('loadingStatus').classList.add('hidden');$('dashboard').classList.remove('hidden');
     render();
   }
 
@@ -678,469 +696,219 @@
           selectedTipo = (selectedTipo === clickedTipo) ? null : clickedTipo;
           render();
         },
-        onHover: (evt, elements, chart) => {
-          chart.canvas.style.cursor = elements.length ? 'pointer' : 'default';
-        },
         plugins: {
-          legend: {
-            position: 'right',
-            labels: {
-              boxWidth: 9,
-              padding: 6,
-              font: { size: 10, weight: '600' },
-              color: '#0F172A',
-              generateLabels: (chart) => {
-                const ds = chart.data.datasets[0];
-                const totalVal = ds.data.reduce((a, b) => a + b, 0);
-                return chart.data.labels.map((label, i) => {
-                  const value = ds.data[i];
-                  const pct = totalVal > 0 ? ((value / totalVal) * 100).toFixed(1) : '0.0';
-                  return {
-                    text: `${label}: ${Math.round(value)}h (${pct}%)`,
-                    fillStyle: ds.backgroundColor[i],
-                    strokeStyle: ds.backgroundColor[i],
-                    index: i
-                  };
-                });
-              }
-            }
-          },
+          legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
           datalabels: {
-            color: '#0F172A',
-            font: { size: 10, weight: 'bold' },
-            clamp: true,
-            formatter: (value) => {
-              if (!value || total === 0) return '';
-              const pct = ((value / total) * 100).toFixed(1);
-              return `${Math.round(value)}h\n(${pct}%)`;
-            }
+            color: '#FFF',
+            font: { weight: 'bold', size: 10 },
+            formatter: (val) => total > 0 ? ((val / total) * 100).toFixed(1) + '%' : ''
           }
         }
       }
     });
   }
 
-  function claseResumenMap(data){
-    const map = {};
+  function renderTblClase(data) {
+    const counts = {};
     data.forEach(r => {
-      if (!map[r.clase]) map[r.clase] = { prod: 0, disp: 0, varado: 0 };
-      if (r.desTipo === 'Producción') map[r.clase].prod += r.horas;
-      else if (r.desTipo === 'Disponible') map[r.clase].disp += r.horas;
-      else if (r.desTipo === 'Varado') map[r.clase].varado += r.horas;
+      if (!counts[r.clase]) counts[r.clase] = new Set();
+      counts[r.clase].add(r.equipo);
     });
-    return map;
-  }
 
-  function claseCountMap(data){
-    const map = {};
-    data.forEach(r => {
-      if (!map[r.clase]) map[r.clase] = new Set();
-      map[r.clase].add(r.equipo);
-    });
-    return map;
-  }
-
-  function renderTblClase(data){
-    const map = claseCountMap(data);
+    const rows = Object.entries(counts).map(([clase, set]) => ({ clase, count: set.size })).sort((a,b) => b.count - a.count);
     const tbody = $('tblClase');
+    tbody.innerHTML = rows.map(r => `
+      <tr class="border-b border-border hover:bg-panel2/50 cursor-pointer ${selectedClaseTabla && selectedClaseTabla.clase === r.clase ? 'bg-cyan/10' : ''}" onclick="window.selectClaseRow('${r.clase}')">
+        <td class="p-1.5 font-medium truncate">${r.clase}</td>
+        <td class="p-1.5 text-right mono font-semibold">${r.count}</td>
+      </tr>
+    `).join('');
+
     const totalEquipos = new Set(data.map(r => r.equipo)).size;
-
-    const filas = Object.entries(map)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([clase, equipos]) => {
-        const isSelected = selectedClaseTabla && selectedClaseTabla.clase === clase;
-        const bgClass = isSelected ? 'bg-cyan/20 font-bold text-cyan' : 'hover:bg-panel2/60';
-        return `<tr class="cursor-pointer transition-colors ${bgClass} border-b border-border" data-clase="${clase}">
-          <td class="p-1.5 text-ink">${clase}</td>
-          <td class="p-1.5 text-right mono text-sub">${equipos.size}</td>
-        </tr>`;
-      }).join('');
-
-    tbody.innerHTML = filas;
     $('tblClaseTotal').textContent = totalEquipos;
-
-    tbody.querySelectorAll('tr').forEach(tr => {
-      tr.addEventListener('click', () => {
-        const c = tr.getAttribute('data-clase');
-        const isSame = selectedClaseTabla && selectedClaseTabla.clase === c;
-        selectedClaseTabla = isSame ? null : { clase: c };
-        render();
-      });
-    });
-
-    requestAnimationFrame(() => fitClaseTable());
   }
 
-  function fitClaseTable(){
-    const wrap = $('wrapClase');
-    const innerWrap = wrap ? wrap.querySelector('#tblClaseTable')?.parentElement : null;
-    const table = $('tblClaseTable');
-    const totalTable = wrap ? wrap.querySelector('table:not(#tblClaseTable)') : null;
-    if (!wrap || !table || !innerWrap) return;
-
-    let fontSize = 12, pad = 5, lineHeight = 1.25;
-    const minFont = 7, minPad = 0.5, minLineHeight = 1;
-
-    const apply = () => {
-      [table, totalTable].forEach(t => {
-        if (!t) return;
-        t.style.fontSize = fontSize + 'px';
-        t.style.lineHeight = lineHeight;
-        t.querySelectorAll('th,td').forEach(el => {
-          el.style.padding = pad + 'px';
-          el.style.lineHeight = lineHeight;
-        });
-      });
-    };
-
-    apply();
-    let guard = 0;
-    while (table.scrollHeight > innerWrap.clientHeight && (fontSize > minFont || pad > minPad || lineHeight > minLineHeight) && guard < 160) {
-      if (lineHeight > minLineHeight) lineHeight = +(lineHeight - 0.05).toFixed(2);
-      else if (pad > minPad) pad = +(pad - 0.25).toFixed(2);
-      else fontSize = +(fontSize - 0.25).toFixed(2);
-      apply();
-      guard++;
+  window.selectClaseRow = function(clase) {
+    if (selectedClaseTabla && selectedClaseTabla.clase === clase) {
+      selectedClaseTabla = null;
+    } else {
+      selectedClaseTabla = { clase };
     }
-    innerWrap.style.overflowY = (table.scrollHeight > innerWrap.clientHeight) ? 'auto' : 'hidden';
-  }
+    render();
+  };
 
-  function renderChartResumen(data){
-    const map = claseResumenMap(data);
-    let entries = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
-    entries = entries.filter(([, v]) => (v.prod + v.varado) > 0);
-
-    const labels = entries.map(([k]) => k);
-
-    const pctTrabajado = entries.map(([, v]) => {
-      const hTotales = v.disp + v.prod + v.varado;
-      return hTotales > 0 ? +((v.prod / hTotales) * 100).toFixed(1) : 0;
-    });
-    const pctVarado = entries.map(([, v]) => {
-      const hTotales = v.disp + v.prod + v.varado;
-      return hTotales > 0 ? +((v.varado / hTotales) * 100).toFixed(1) : 0;
-    });
-    const pctDisponible = entries.map(([, v]) => {
-      const hTotales = v.disp + v.prod + v.varado;
-      return hTotales > 0 ? +((v.disp / hTotales) * 100).toFixed(1) : 0;
-    });
-
-    const totRaw = entries.reduce((acc, [, v]) => {
-      acc.prod += v.prod; acc.disp += v.disp; acc.varado += v.varado; return acc;
-    }, { prod: 0, disp: 0, varado: 0 });
-    const totH = totRaw.prod + totRaw.disp + totRaw.varado;
-
-    labels.push('TOTALES');
-    pctTrabajado.push(totH > 0 ? +((totRaw.prod / totH) * 100).toFixed(1) : 0);
-    pctVarado.push(totH > 0 ? +((totRaw.varado / totH) * 100).toFixed(1) : 0);
-    pctDisponible.push(totH > 0 ? +((totRaw.disp / totH) * 100).toFixed(1) : 0);
-
+  function renderChartResumen(data) {
     if (chartResumen) chartResumen.destroy();
-    const canvas = $('chartResumen');
-    const wrap = $('wrapChartResumen');
+    const ctx = $('chartResumen').getContext('2d');
 
-    const alturaPorFila = 34;
-    const alturaMinima = wrap.clientHeight || 260;
-    const alturaNecesaria = Math.max(alturaMinima, labels.length * alturaPorFila + 40);
-    canvas.style.height = alturaNecesaria + 'px';
-    wrap.style.overflowY = alturaNecesaria > alturaMinima ? 'auto' : 'hidden';
+    const grupos = [...new Set(data.map(r => r.grupo))].sort();
+    const prodData = [], dispData = [], varadoData = [];
 
-    const ctx = canvas.getContext('2d');
-    const COLOR_TRABAJADO = '#1E3A8A';
-    const COLOR_VARADO = '#38BDF8';
-    const COLOR_DISPONIBLE = '#94A3B8';
-
-    const datalabelComun = (colorTexto) => ({
-      display: (ctxD) => ctxD.dataset.data[ctxD.dataIndex] >= 5,
-      color: colorTexto,
-      anchor: 'center',
-      align: 'center',
-      font: { size: 10, weight: '700' },
-      formatter: (value) => value > 0 ? value.toFixed(0) + '%' : ''
+    grupos.forEach(g => {
+      const gData = data.filter(r => r.grupo === g);
+      prodData.push(gData.filter(r => r.desTipo === 'Producción').reduce((a,b) => a + b.horas, 0));
+      dispData.push(gData.filter(r => r.desTipo === 'Disponible').reduce((a,b) => a + b.horas, 0));
+      varadoData.push(gData.filter(r => r.desTipo === 'Varado').reduce((a,b) => a + b.horas, 0));
     });
 
     chartResumen = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels,
+        labels: grupos,
         datasets: [
-          {
-            label: '% Trabajado',
-            data: pctTrabajado,
-            backgroundColor: COLOR_TRABAJADO,
-            stack: 'total',
-            datalabels: datalabelComun('#FFFFFF')
-          },
-          {
-            label: '% Varado',
-            data: pctVarado,
-            backgroundColor: COLOR_VARADO,
-            stack: 'total',
-            datalabels: datalabelComun('#0F172A')
-          },
-          {
-            label: '% Disponible',
-            data: pctDisponible,
-            backgroundColor: COLOR_DISPONIBLE,
-            stack: 'total',
-            datalabels: datalabelComun('#FFFFFF')
-          }
+          { label: 'Producción', data: prodData, backgroundColor: COLORS.prod },
+          { label: 'Disponible', data: dispData, backgroundColor: COLORS.disp },
+          { label: 'Varado', data: varadoData, backgroundColor: COLORS.varado }
         ]
       },
       options: {
-        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 4, bottom: 2, left: 2, right: 12 } },
-        plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 10 }, color: '#475569' } },
-          tooltip: {
-            callbacks: {
-              label: (ctxT) => `${ctxT.dataset.label}: ${ctxT.parsed.x}%`
-            }
-          }
-        },
         scales: {
-          x: {
-            stacked: true,
-            min: 0,
-            max: 100,
-            ticks: { font: { size: 9 }, color: '#64748B', callback: (v) => v + '%' },
-            grid: { color: '#E2E8F0' }
-          },
-          y: {
-            stacked: true,
-            ticks: {
-              font: { size: 9, weight: '700' },
-              color: (ctxY) => labels[ctxY.index] === 'TOTALES' ? '#0F172A' : '#334155',
-              autoSkip: false
-            },
-            title: {
-              display: true,
-              text: 'GRUPO DE EQUIPOS',
-              font: { size: 10, weight: '700' },
-              color: '#64748B'
-            },
-            grid: { display: false }
-          }
+          x: { stacked: true, ticks: { font: { size: 9 } } },
+          y: { stacked: true, ticks: { font: { size: 9 } } }
+        },
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+          datalabels: { display: false }
         }
       }
     });
   }
 
-  function semanaMap(data){
-    const map = {};
-    data.forEach(r => {
-      if (!map[r.semana]) map[r.semana] = { order: r.semanaOrder, prod: 0, disp: 0, varado: 0 };
-      if (r.desTipo === 'Producción') map[r.semana].prod += r.horas;
-      else if (r.desTipo === 'Disponible') map[r.semana].disp += r.horas;
-      else if (r.desTipo === 'Varado') map[r.semana].varado += r.horas;
+  function renderTblVarados(data, totalVaradoHrs) {
+    const varados = data.filter(r => r.desTipo === 'Varado');
+    const tbody = $('tblVarados');
+
+    if (!varados.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="p-2 text-center text-sub italic">Sin equipos varados en el período</td></tr>`;
+      return;
+    }
+
+    const eqMap = {};
+    varados.forEach(r => {
+      if (!eqMap[r.equipo]) eqMap[r.equipo] = { equipo: r.equipo, clase: r.clase, horas: 0, notas: new Set() };
+      eqMap[r.equipo].horas += r.horas;
+      if (r.notas) eqMap[r.equipo].notas.add(r.notas);
     });
-    return map;
+
+    const rows = Object.values(eqMap).sort((a,b) => b.horas - a.horas);
+
+    tbody.innerHTML = rows.map(r => {
+      const pct = totalVaradoHrs > 0 ? ((r.horas / totalVaradoHrs) * 100).toFixed(1) : '0.0';
+      const notasStr = [...r.notas].join(' | ') || 'Sin observación';
+      return `
+        <tr class="hover:bg-panel2/50 cursor-pointer ${selectedEquipo === r.equipo ? 'bg-purple/10' : ''}" onclick="window.selectEquipoRow('${r.equipo}')">
+          <td class="p-1.5 font-bold mono text-ink">${r.equipo}</td>
+          <td class="p-1.5 text-sub truncate">${r.clase}</td>
+          <td class="p-1.5 text-right mono font-semibold text-orange">${Math.round(r.horas)}</td>
+          <td class="p-1.5 text-right mono font-bold">${pct}%</td>
+          <td class="p-1.5 text-sub truncate max-w-[150px]" title="${notasStr}">${notasStr}</td>
+        </tr>
+      `;
+    }).join('');
   }
 
-  function renderChartSemana(data){
-    const map = semanaMap(data);
-    const entries = Object.entries(map).sort((a, b) => a[1].order - b[1].order);
-    const labels = entries.map(([k]) => k);
-    const semanaActiva = $('filterSemana').value;
+  window.selectEquipoRow = function(equipo) {
+    selectedEquipo = (selectedEquipo === equipo) ? null : equipo;
+    render();
+  };
 
-    const pctUtilSemana = entries.map(([, v]) => {
-      const hTotales = v.disp + v.prod;
-      return hTotales > 0 ? +((v.prod / hTotales) * 100).toFixed(1) : 0;
-    });
-    const pctDispSemana = entries.map(([, v]) => {
-      const hTotales = v.disp + v.prod;
-      return hTotales > 0 ? +(((hTotales - v.varado) / hTotales) * 100).toFixed(1) : 0;
-    });
-
+  function renderChartSemana(data) {
     if (chartSemana) chartSemana.destroy();
     const ctx = $('chartSemana').getContext('2d');
 
-    const pillLabel = (color, align, distancia) => ({
-      display: true,
-      align,
-      anchor: align,
-      offset: distancia,
-      clamp: true,
-      backgroundColor: color + '22',
-      borderRadius: 8,
-      padding: { top: 3, bottom: 3, left: 6, right: 6 },
-      color: color,
-      font: { size: 10, weight: '700' },
-      formatter: (value) => value > 0 ? Math.round(value) + '%' : ''
+    const semanaMap = {};
+    data.forEach(r => {
+      if (!semanaMap[r.semana]) semanaMap[r.semana] = { order: r.semanaOrder, prod: 0, disp: 0, varado: 0 };
+      if (r.desTipo === 'Producción') semanaMap[r.semana].prod += r.horas;
+      if (r.desTipo === 'Disponible') semanaMap[r.semana].disp += r.horas;
+      if (r.desTipo === 'Varado') semanaMap[r.semana].varado += r.horas;
+    });
+
+    const semanasSorted = Object.keys(semanaMap).sort((a,b) => semanaMap[a].order - semanaMap[b].order);
+    const dispData = [], utilData = [];
+
+    semanasSorted.forEach(s => {
+      const item = semanaMap[s];
+      const total = item.prod + item.disp + item.varado;
+      const pctDisp = total > 0 ? ((total - item.varado) / total) * 100 : 0;
+      const mec = item.prod + item.disp;
+      const pctUtil = mec > 0 ? (item.prod / mec) * 100 : 0;
+
+      dispData.push(pctDisp.toFixed(1));
+      utilData.push(pctUtil.toFixed(1));
     });
 
     chartSemana = new Chart(ctx, {
       type: 'line',
       data: {
-        labels,
+        labels: semanasSorted,
         datasets: [
-          {
-            label: '% Utilización',
-            data: pctUtilSemana,
-            borderColor: COLORS.prod,
-            backgroundColor: COLORS.prod,
-            tension: 0.45,
-            borderWidth: 3,
-            pointRadius: (ctxP) => labels[ctxP.dataIndex] === semanaActiva ? 7 : 3,
-            pointBackgroundColor: COLORS.prod,
-            pointHoverRadius: 6,
-            fill: false,
-            datalabels: pillLabel(COLORS.prod, 'bottom', 10)
-          },
-          {
-            label: '% Disponibilidad',
-            data: pctDispSemana,
-            borderColor: COLORS.disp,
-            backgroundColor: COLORS.disp,
-            tension: 0.45,
-            borderWidth: 3,
-            pointRadius: (ctxP) => labels[ctxP.dataIndex] === semanaActiva ? 7 : 3,
-            pointBackgroundColor: COLORS.disp,
-            pointHoverRadius: 6,
-            fill: false,
-            datalabels: pillLabel(COLORS.disp, 'top', 10)
-          }
+          { label: '% Disp', data: dispData, borderColor: COLORS.green, backgroundColor: COLORS.green, tension: 0.2 },
+          { label: '% Util', data: utilData, borderColor: COLORS.purple, backgroundColor: COLORS.purple, tension: 0.2 }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 26, bottom: 4, left: 8, right: 8 } },
-        interaction: { mode: 'index', intersect: false },
-        onClick: (evt, elements, chart) => {
-          if (!elements.length) return;
-          const idx = elements[0].index;
-          const clickedSemana = chart.data.labels[idx];
-          const sel = $('filterSemana');
-          sel.value = (sel.value === clickedSemana) ? '' : clickedSemana;
-          render();
-        },
-        onHover: (evt, elements, chart) => {
-          chart.canvas.style.cursor = elements.length ? 'pointer' : 'default';
+        scales: {
+          y: { min: 0, max: 100, ticks: { font: { size: 8 } } },
+          x: { ticks: { font: { size: 8 } } }
         },
         plugins: {
-          legend: {
-            position: 'bottom',
-            align: 'center',
-            labels: {
-              usePointStyle: true,
-              pointStyle: 'circle',
-              boxWidth: 7,
-              padding: 14,
-              font: { size: 10 },
-              color: '#475569'
-            }
-          },
+          legend: { position: 'top', labels: { boxWidth: 8, font: { size: 9 } } },
           datalabels: { display: false }
-        },
-        scales: {
-          x: {
-            ticks: {
-              font: { size: 9 }, color: '#94A3B8',
-              callback: function(value, index){
-                const lbl = this.getLabelForValue(value);
-                return lbl === semanaActiva ? '● ' + lbl : lbl;
-              }
-            },
-            grid: { display: false },
-            title: { display: true, text: 'Semana', font: { size: 9 }, color: '#94A3B8' }
-          },
-          y: {
-            min: -18, max: 118,
-            afterBuildTicks: (axis) => { axis.ticks = [0, 50, 100].map(v => ({ value: v })); },
-            ticks: { callback: (v) => v + '%', font: { size: 9 }, color: '#94A3B8' },
-            grid: { color: '#E2E8F0', borderDash: [3, 3] },
-            title: { display: true, text: '% Utilización y % Disponibilidad', font: { size: 9 }, color: '#94A3B8' }
-          }
         }
       }
     });
   }
 
-  function renderDesviaciones(data){
-    const map = semanaMap(data);
-    const entries = Object.entries(map)
-      .filter(([k]) => k !== 'Sin semana')
-      .sort((a, b) => a[1].order - b[1].order);
-
-    const calc = entries.map(([semana, v]) => {
-      const hTotales = v.disp + v.prod;
-      const pctDisp = hTotales > 0 ? ((hTotales - v.varado) / hTotales) * 100 : 0;
-      const pctUtil = hTotales > 0 ? (v.prod / hTotales) * 100 : 0;
-      return { semana, pctDisp, pctUtil };
+  function renderDesviaciones(data) {
+    const semanaMap = {};
+    data.forEach(r => {
+      if (!semanaMap[r.semana]) semanaMap[r.semana] = { order: r.semanaOrder, prod: 0, disp: 0, varado: 0 };
+      if (r.desTipo === 'Producción') semanaMap[r.semana].prod += r.horas;
+      if (r.desTipo === 'Disponible') semanaMap[r.semana].disp += r.horas;
+      if (r.desTipo === 'Varado') semanaMap[r.semana].varado += r.horas;
     });
 
-    const promDisp = calc.length ? calc.reduce((a, c) => a + c.pctDisp, 0) / calc.length : 0;
-    const promUtil = calc.length ? calc.reduce((a, c) => a + c.pctUtil, 0) / calc.length : 0;
+    const semanasSorted = Object.keys(semanaMap).sort((a,b) => semanaMap[a].order - semanaMap[b].order);
+    if (!semanasSorted.length) return;
+
+    let sumDisp = 0, sumUtil = 0;
+    const list = semanasSorted.map(s => {
+      const item = semanaMap[s];
+      const total = item.prod + item.disp + item.varado;
+      const pctDisp = total > 0 ? ((total - item.varado) / total) * 100 : 0;
+      const mec = item.prod + item.disp;
+      const pctUtil = mec > 0 ? (item.prod / mec) * 100 : 0;
+      sumDisp += pctDisp;
+      sumUtil += pctUtil;
+      return { semana: s, pctDisp, pctUtil };
+    });
+
+    const promDisp = sumDisp / list.length;
+    const promUtil = sumUtil / list.length;
 
     $('promDispLabel').textContent = promDisp.toFixed(1) + '\%';$('promUtilLabel').textContent = promUtil.toFixed(1) + '%';
 
-    const semanaActiva = $('filterSemana').value;
     const tbody = $('tblDesviacion');
-
-    const filas = calc
-      .map(c => ({ ...c, devDisp: c.pctDisp - promDisp }))
-      .sort((a, b) => Math.abs(b.devDisp) - Math.abs(a.devDisp))
-      .map(c => {
-        const esNegativo = c.devDisp < 0;
-        const colorDev = esNegativo ? 'text-red' : 'text-green';
-        const flecha = esNegativo ? '▼' : '▲';
-        const isSelected = semanaActiva === c.semana;
-        const rowClass = isSelected ? 'bg-cyan/10 font-semibold' : 'hover:bg-panel2/60';
-        return `<tr class="cursor-pointer transition-colors ${rowClass}" data-semana="${c.semana}">
-          <td class="p-1 text-ink mono">${c.semana}</td>
-          <td class="p-1 text-right mono text-sub">${c.pctDisp.toFixed(1)}%</td>
-          <td class="p-1 text-right mono font-semibold ${colorDev}">${flecha} ${Math.abs(c.devDisp).toFixed(1)} pts</td>
-        </tr>`;
-      }).join('');
-
-    tbody.innerHTML = filas || `<tr><td colspan="3" class="p-2 text-center text-sub">Sin datos suficientes</td></tr>`;
-
-    tbody.querySelectorAll('tr[data-semana]').forEach(tr => {
-      tr.addEventListener('click', () => {
-        const s = tr.getAttribute('data-semana');
-        const sel = $('filterSemana');
-        sel.value = (sel.value === s) ? '' : s;
-        render();
-      });
-    });
-  }
-
-  function renderTblVarados(data, totalVarado){
-    const map = {};
-    data.filter(r => r.desTipo === 'Varado').forEach(r => {
-      if (!map[r.equipo]) map[r.equipo] = { clase: r.clase, horas: 0, causa: r.notas || 'Sin causa registrada' };
-      map[r.equipo].horas += r.horas;
-    });
-
-    const tbody = $('tblVarados');
-    tbody.innerHTML = Object.entries(map).sort((a,b) => b[1].horas - a[1].horas).map(([eq, b]) => {
-      const pctImpacto = totalVarado > 0 ? (b.horas / totalVarado) * 100 : 0;
-      return `<tr class="hover:bg-panel2/60 cursor-pointer" data-equipo="${eq}">
-        <td class="p-1 font-semibold text-ink mono">${eq}</td>
-        <td class="p-1 text-sub">${b.clase}</td>
-        <td class="p-1 text-right mono text-orange font-medium">${Math.round(b.horas)}</td>
-        <td class="p-1 text-right mono text-red font-semibold relative">
-          <div class="absolute inset-y-0 left-0 bg-red/10" style="width:${Math.min(pctImpacto,100)}%"></div>
-          <span class="relative">${pctImpacto.toFixed(1)}%</span>
-        </td>
-        <td class="p-1 text-sub max-w-xs" title="${b.causa}">${b.causa}</td>
-      </tr>`;
+    tbody.innerHTML = list.map(item => {
+      const diff = item.pctDisp - promDisp;
+      const sign = diff >= 0 ? '+' : '';
+      const colorClass = diff >= 0 ? 'text-green' : 'text-red';
+      return `
+        <tr>
+          <td class="p-1 font-medium">${item.semana}</td>
+          <td class="p-1 text-right mono">${item.pctDisp.toFixed(1)}%</td>
+          <td class="p-1 text-right mono font-bold ${colorClass}">${sign}${diff.toFixed(1)}%</td>
+        </tr>
+      `;
     }).join('');
-
-    tbody.querySelectorAll('tr').forEach(tr => {
-      tr.addEventListener('click', () => {
-        const eq = tr.getAttribute('data-equipo');
-        selectedEquipo = (selectedEquipo === eq) ? null : eq;
-        render();
-      });
-    });
   }
 
 })();
 </script>
-
 </body>
 </html>
