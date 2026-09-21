@@ -176,14 +176,46 @@
   dropZone.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
   fileInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) handleFile(f); });
 
-  $('resetBtn').addEventListener('click', () => {
+ $('resetBtn').addEventListener('click', () => {
     $('dashboard').classList.add('hidden');
     $('loaderScreen').classList.remove('hidden');
     clearLoadError();
     fileInput.value = '';
     selectedEquipo = null; selectedTipo = null; selectedClaseTabla = null;
   });
+function procesarWorkbook(wb){
+      let sheet = null;
+      let json = [];
 
+      // Intenta buscar una hoja que contenga datos válidos en todo el libro
+      for (const sheetName of wb.SheetNames) {
+          const s = wb.Sheets[sheetName];
+          const tempJson = XLSX.utils.sheet_to_json(s, { defval: '', raw: true });
+          if (tempJson && tempJson.length > 0) {
+              // Verificamos que tenga al menos alguna columna clave como "Equipo" o "horas"
+              const sample = tempJson[0];
+              const keys = Object.keys(sample).map(k => normalizeStr(k));
+              if (keys.some(k => k.includes('equipo') || k.includes('hora') || k.includes('clase'))) {
+                  sheet = s;
+                  json = tempJson;
+                  break;
+              }
+          }
+      }
+
+      // Si no encontró por nombre clave, toma la primera pestaña que tenga cualquier fila
+      if (!json.length && wb.SheetNames.length > 0) {
+          sheet = wb.Sheets[wb.SheetNames[0]];
+          json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+      }
+
+      if (!json || json.length === 0) {
+          showLoadError('El archivo Excel cargado desde GitHub está vacío o no tiene el formato esperado.');
+          return;
+      }
+
+      processData(json);
+  }
   window.addEventListener('resize', () => {
     if (!$('dashboard').classList.contains('hidden')) render();
   });
