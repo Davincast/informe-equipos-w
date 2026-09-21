@@ -903,7 +903,42 @@
       });
     });
   }
+document.addEventListener("DOMContentLoaded", () => {
+  // Ruta donde está guardado el Excel en tu servidor o repositorio
+  const archivoExcelUrl = "./datos_equipos.xlsx"; 
 
+  fetch(archivoExcelUrl)
+    .then(response => {
+      if (!response.ok) throw new Error("No se pudo cargar el archivo Excel.");
+      return response.arrayBuffer();
+    })
+    .then(buffer => {
+      // Leer el archivo con SheetJS
+      const workbook = XLSX.read(buffer, { type: "array" });
+      
+      // Buscar la hoja llamada "Digitacion_2" (como lo menciona tu código)
+      const nombreHoja = workbook.SheetNames.includes("Digitacion_2") 
+        ? "Digitacion_2" 
+        : workbook.SheetNames[0]; // Si no existe, toma la primera hoja
+      
+      const worksheet = workbook.Sheets[nombreHoja];
+      
+      // Convertir la hoja de Excel a un arreglo de objetos JSON
+      const json = XLSX.utils.sheet_to_json(worksheet);
+
+      // Aquí pasas los datos a tu lógica principal
+      iniciarDashboard(json);
+    })
+    .catch(error => {
+      console.error("Error al cargar los datos automáticamente:", error);
+      showLoadError("No se pudo cargar el archivo de Excel automáticamente.");
+    });
+});
+
+function iniciarDashboard(json) {
+  // Aquí va todo el código que compartiste (procesamiento de 'json', renderizado, etc.)
+  // ...
+}
   // Inicializar cargando los datos automáticamente al abrir la página
   window.addEventListener('DOMContentLoaded', () => {
     processData(datosIncrustados);
