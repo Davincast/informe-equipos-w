@@ -18,17 +18,9 @@
       theme: {
         extend: {
           colors: {
-            bg: '#F8FAFC',
-            panel: '#FFFFFF',
-            panel2: '#F1F5F9',
-            border: '#E2E8F0',
-            cyan: '#0891B2',
-            green: '#059669',
-            orange: '#EA580C',
-            red: '#DC2626',
-            purple: '#7C3AED',
-            ink: '#0F172A',
-            sub: '#64748B',
+            bg: '#F8FAFC', panel: '#FFFFFF', panel2: '#F1F5F9', border: '#E2E8F0',
+            cyan: '#0891B2', green: '#059669', orange: '#EA580C', red: '#DC2626',
+            purple: '#7C3AED', ink: '#0F172A', sub: '#64748B',
           }
         }
       }
@@ -51,258 +43,71 @@
   <div class="max-w-md w-full text-center bg-panel p-6 rounded-xl border border-border shadow-sm">
     <div id="spinner" class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan mb-3"></div>
     <h1 class="text-xl font-bold text-ink mb-1">Cargando Informe Ejecutivo...</h1>
-    <p class="text-sub text-xs mb-4">Buscando archivo en el servidor o selecciona tu archivo manualmente:</p>
+    <p class="text-sub text-xs mb-4">Selecciona tu archivo de Excel para comenzar:</p>
 
-    <!-- Selector manual de archivos por si falla el automático -->
     <div class="mb-4">
-      <label for="fileInput" class="block w-full cursor-pointer bg-cyan/10 hover:bg-cyan/20 border border-cyan/30 text-cyan text-xs font-semibold py-2.5 px-4 rounded-lg transition-colors">
+      <label for="fileInput" class="block w-full cursor-pointer bg-cyan/10 hover:bg-cyan/25 border border-cyan/30 text-cyan text-xs font-semibold py-3 px-4 rounded-lg transition-colors">
         📁 Seleccionar archivo Excel (.xlsx)
       </label>
       <input type="file" id="fileInput" accept=".xlsx, .xls" class="hidden">
     </div>
 
-    <div id="loadError" class="hidden text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left"></div>
+    <!-- Caja de errores detallados -->
+    <div id="loadError" class="hidden text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left max-h-40 overflow-y-auto"></div>
   </div>
 </div>
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="hidden h-full w-full flex flex-col p-2 gap-2 overflow-hidden">
-
-  <!-- Header / Filtros -->
   <header class="flex items-center justify-between bg-panel2 border border-border px-3 py-1.5 rounded-lg flex-shrink-0">
     <div class="flex items-center gap-2">
       <div class="w-6 h-6 rounded bg-gradient-to-br from-cyan to-purple flex items-center justify-center font-bold text-white text-xs">IE</div>
       <h1 class="font-bold text-xs md:text-sm text-ink leading-none">Informe Ejecutivo — Disponibilidad y Eficiencia de Equipos</h1>
-      <span class="badge bg-green/10 text-green border border-green/30 text-[10px]">INFORME GENERAL</span>
     </div>
-
     <div class="flex items-center gap-3">
-      <div class="flex items-center gap-1.5">
-        <label for="filterGrupo" class="text-xs text-sub font-medium">Grupo:</label>
-        <select id="filterGrupo" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
-      </div>
-
-      <div class="flex items-center gap-1.5">
-        <label for="filterMes" class="text-xs text-sub font-medium">Filtrar por Mes:</label>
-        <select id="filterMes" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
-      </div>
-
-      <div class="flex items-center gap-1.5">
-        <label for="filterSemana" class="text-xs text-sub font-medium">Semana:</label>
-        <select id="filterSemana" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
-      </div>
-
-      <button id="reloadBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Cambiar Archivo</button>
+      <select id="filterGrupo" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink"></select>
+      <select id="filterMes" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink"></select>
+      <select id="filterSemana" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink"></select>
+      <button id="reloadBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel text-sub">Cambiar Archivo</button>
     </div>
   </header>
 
-  <!-- Fila 1: KPIs -->
   <section class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-1 flex-shrink-0">
     <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Equipos Únicos</p>
-      <p id="kpiEquipos" class="text-sm font-black text-ink mono leading-tight my-0">0</p>
-      <p class="text-[7px] text-sub truncate">Activos en el proyecto</p>
+      <p class="text-[8px] text-sub uppercase mono font-semibold">Equipos Únicos</p>
+      <p id="kpiEquipos" class="text-sm font-black text-ink mono">0</p>
     </div>
-
     <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <div class="flex items-center justify-between gap-1">
-        <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight break-words">% Disp. Mecánica</p>
-        <span id="kpiDispBadge" class="badge bg-green/10 text-green border border-green/30 shrink-0">ÓPTIMO</span>
-      </div>
-      <p id="kpiDisp" class="text-sm font-black text-green mono leading-tight my-0">0%</p>
+      <div class="flex items-center justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Disp. Mecánica</p><span id="kpiDispBadge" class="badge bg-green/10 text-green border border-green/30">ÓPTIMO</span></div>
+      <p id="kpiDisp" class="text-sm font-black text-green mono">0%</p>
     </div>
-
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight break-words">% Disp. Eq. en Obra</p>
-      <p id="kpiDispObra" class="text-sm font-black text-cyan mono leading-tight my-0">0%</p>
-    </div>
-
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Horas Totales</p>
-      <p id="kpiTotalHoras" class="text-sm font-black text-ink mono leading-tight my-0">0</p>
-    </div>
-
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Mayor Varado</p>
-      <p id="kpiClaseVarado" class="text-[9px] font-bold text-ink leading-tight my-0 break-words">—</p>
-      <p id="kpiClaseVaradoHrs" class="text-[7px] text-orange mono font-semibold truncate">0 h varadas</p>
-    </div>
-
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Producción</p>
-      <p id="kpiHorasProd" class="text-sm font-black text-cyan mono leading-tight my-0">0</p>
-      <p class="text-[7px] text-sub mono truncate"><span id="kpiPctProd">0%</span> del total</p>
-    </div>
-
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Disponibles</p>
-      <p id="kpiHorasDisp" class="text-sm font-black text-green mono leading-tight my-0">0</p>
-      <p class="text-[7px] text-sub mono truncate"><span id="kpiPctDisp">0%</span> del total</p>
-    </div>
-
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Varadas</p>
-      <p id="kpiHorasVarado" class="text-sm font-black text-orange mono leading-tight my-0">0</p>
-      <p class="text-[7px] text-sub mono truncate"><span id="kpiPctVarado">0%</span> del total</p>
-    </div>
-
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Equipos Varados</p>
-      <p id="kpiEquiposVarados" class="text-sm font-black text-red mono leading-tight my-0">0</p>
-      <p id="kpiEquiposVaradosSub" class="text-[7px] text-sub truncate">0% del total activos</p>
-    </div>
-
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">% Utilización</p>
-      <p id="kpiUtilGlobal" class="text-sm font-black text-purple mono leading-tight my-0">0%</p>
-    </div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Disp. Obra</p><p id="kpiDispObra" class="text-sm font-black text-cyan mono">0%</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Horas Totales</p><p id="kpiTotalHoras" class="text-sm font-black text-ink mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Mayor Varado</p><p id="kpiClaseVarado" class="text-[9px] font-bold text-ink">—</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Producción</p><p id="kpiHorasProd" class="text-sm font-black text-cyan mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Disponibles</p><p id="kpiHorasDisp" class="text-sm font-black text-green mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Varadas</p><p id="kpiHorasVarado" class="text-sm font-black text-orange mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Equipos Varados</p><p id="kpiEquiposVarados" class="text-sm font-black text-red mono">0</p></div>
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Utilización</p><p id="kpiUtilGlobal" class="text-sm font-black text-purple mono">0%</p></div>
   </section>
 
-  <!-- Fila 2: Donut + Tabla Clases + Varados -->
   <section class="grid grid-cols-1 md:grid-cols-9 gap-2 flex-[1.6] min-h-0">
-    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-1 flex-shrink-0">
-        <h3 class="font-semibold text-xs text-ink">Distribución de Horas Totales</h3>
-        <div id="tipoFilterBadge" class="hidden items-center gap-1.5">
-          <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Filtrado por: <span id="tipoFilterName" class="mono"></span></span>
-          <button id="clearTipoFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
-        </div>
-      </div>
-      <div class="flex-1 relative min-h-0">
-        <canvas id="chartDonut"></canvas>
-      </div>
-    </div>
-
-    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-1 flex-shrink-0">
-        <h3 class="font-semibold text-xs text-ink truncate">Cantidad Equipos por Clase</h3>
-        <button id="clearClaseFilter" class="hidden text-[10px] text-red hover:underline font-medium shrink-0">Quitar ✕</button>
-      </div>
-      <div id="wrapClase" class="flex-1 min-h-0 border border-border rounded flex flex-col overflow-hidden">
-        <div class="flex-1 min-h-0 overflow-hidden">
-          <table id="tblClaseTable" class="w-full text-left text-sm border-collapse">
-            <thead class="bg-panel2 text-ink border-b border-border sticky top-0 z-10">
-              <tr>
-                <th class="p-1.5 uppercase font-bold tracking-wide">Equipo</th>
-                <th class="p-1.5 text-right uppercase font-bold tracking-wide">Cantidad</th>
-              </tr>
-            </thead>
-            <tbody id="tblClase"></tbody>
-          </table>
-        </div>
-        <table class="w-full text-left text-sm flex-shrink-0 border-t-2 border-border">
-          <tbody>
-            <tr class="bg-panel2 font-bold">
-              <td id="tblClaseTotalLabel" class="p-1.5 text-ink uppercase">TOTAL</td>
-              <td id="tblClaseTotal" class="p-1.5 text-right mono text-ink">0</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-1 flex-shrink-0">
-        <h3 class="font-semibold text-xs text-ink">Diagnóstico de Equipos Varados</h3>
-        <div id="equipoFilterBadge" class="hidden items-center gap-1.5">
-          <span class="badge bg-purple/10 text-purple border border-purple/30">Equipo: <span id="equipoFilterName" class="mono"></span></span>
-          <button id="clearEquipoFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
-        </div>
-      </div>
-      <div id="wrapVarados" class="overflow-hidden flex-1 min-h-0 border border-border rounded">
-        <table id="tblVaradosTable" class="w-full text-left text-[13px]">
-          <thead class="bg-panel2 text-sub uppercase mono border-b border-border">
-            <tr>
-              <th class="p-1.5">Equipo</th>
-              <th class="p-1.5">Clase</th>
-              <th class="p-1.5 text-right">Hrs Varado</th>
-              <th class="p-1.5 text-right">% Impacto</th>
-              <th class="p-1.5">Causa Contextualizada</th>
-            </tr>
-          </thead>
-          <tbody id="tblVarados" class="divide-y divide-border"></tbody>
-        </table>
-      </div>
-    </div>
+    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Distribución Horas</h3><div class="flex-1 relative min-h-0"><canvas id="chartDonut"></canvas></div></div>
+    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Equipos por Clase</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-sm"><tbody id="tblClase"></tbody></table></div></div>
+    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Equipos Varados</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-xs"><tbody id="tblVarados"></tbody></table></div></div>
   </section>
-
-  <!-- Fila 3: Gráfica Grupos + Semana -->
-  <section class="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-[2.6] min-h-0">
-    <div class="lg:col-span-8 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-0.5 flex-shrink-0">
-        <h3 class="font-semibold text-[11px] text-ink">Relación Trabajado - Varado - Disponible por Grupo de Equipos</h3>
-        <div id="claseChartFilterBadge" class="hidden items-center gap-1.5">
-          <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Clase: <span id="claseChartFilterName" class="mono"></span></span>
-          <button id="clearClaseChartFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
-        </div>
-      </div>
-      <div id="wrapChartResumen" class="flex-1 relative min-h-0 overflow-hidden">
-        <canvas id="chartResumen"></canvas>
-      </div>
-    </div>
-
-    <div class="lg:col-span-4 flex flex-col gap-2 min-h-0">
-      <div class="flex-[1.5] bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-        <div class="flex items-center justify-between mb-1 flex-shrink-0">
-          <h3 class="font-semibold text-xs text-ink">% Utilización y % Disponibilidad por Semana</h3>
-          <div id="semanaFilterBadge" class="hidden items-center gap-1.5">
-            <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Semana: <span id="semanaFilterName" class="mono"></span></span>
-            <button id="clearSemanaFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
-          </div>
-        </div>
-        <div id="wrapChartSemana" class="flex-1 relative min-h-[130px]">
-          <canvas id="chartSemana"></canvas>
-        </div>
-      </div>
-
-      <div class="flex-1 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-        <div class="flex items-center justify-between mb-1 flex-shrink-0">
-          <h3 class="font-semibold text-xs text-ink">Desviaciones vs. Promedio Semanal</h3>
-        </div>
-        <p class="text-[9px] text-sub mb-1 flex-shrink-0">Prom. %Disp: <span id="promDispLabel" class="mono font-semibold text-ink">0%</span> · Prom. %Util: <span id="promUtilLabel" class="mono font-semibold text-ink">0%</span></p>
-        <div id="wrapDesviacion" class="flex-1 min-h-0 border border-border rounded overflow-hidden flex flex-col">
-          <table id="tblDesviacionTable" class="w-full text-left text-[10px]">
-            <thead class="bg-panel2 text-sub uppercase mono border-b border-border sticky top-0 z-10">
-              <tr>
-                <th class="p-1">Semana</th>
-                <th class="p-1 text-right">%Disp</th>
-                <th class="p-1 text-right">Desviación</th>
-              </tr>
-            </thead>
-            <tbody id="tblDesviacion" class="divide-y divide-border"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </section>
-
 </div>
 
 <script>
 (function(){
   const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  const COLORS = { prod:'#0891B2', disp:'#059669', varado:'#EA580C', orange:'#EA580C', purple:'#7C3AED', green:'#059669' };
-
   let RAW = [];
   let chartDonut = null;
-  let chartResumen = null;
-  let chartSemana = null;
-  let selectedEquipo = null;
-  let selectedTipo = null;
-  let selectedClaseTabla = null;
+  let selectedEquipo = null, selectedTipo = null, selectedClaseTabla = null;
   const mesLabels = {};
 
   const $ = (id) => document.getElementById(id);
-
   Chart.register(ChartDataLabels);
-
-  function normalizeStr(v){
-    return String(v ?? '')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
 
   function showLoadError(msg){
     const el = $('loadError');
@@ -310,21 +115,10 @@
     el.classList.remove('hidden');
   }
 
-  function clearLoadError(){
-    $('loadError').textContent = '';
-    $('loadError'].classList?.add('hidden');
-  }
-
-  $('reloadBtn').addEventListener('click', () => {
-    $('dashboard').classList.add('hidden');
-    $('loaderScreen').classList.remove('hidden');
-    if($('loadError')) $('loadError').classList.add('hidden');
-    selectedEquipo = null;
-    selectedTipo = null;
-    selectedClaseTabla = null;
+  $('reloadBtn').addEventListener('click', () => {$('dashboard').classList.add('hidden');
+    $('loaderScreen').classList.remove('hidden');$('loadError').classList.add('hidden');
   });
 
-  // Manejador del input de archivo manual
   $('fileInput').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -336,57 +130,26 @@
         const wb = XLSX.read(data, { type: 'array', cellDates: true });
         processWorkbook(wb);
       } catch (err) {
-        showLoadError(`<strong>Error al leer el archivo:</strong> ${err.message}`);
+        showLoadError(`<strong>Error al procesar el Excel:</strong> ${err.message}`);
       }
     };
+    reader.onerror = () => showLoadError("Error al leer el archivo desde el disco.");
     reader.readAsArrayBuffer(file);
   });
 
-  window.addEventListener('resize', () => {
-    if (!$('dashboard').classList.contains('hidden')) render();
-  });
-
-  const wrapChartSemanaEl = $('wrapChartSemana');
-  if (wrapChartSemanaEl && 'ResizeObserver' in window) {
-    new ResizeObserver(() => {
-      if (chartSemana) chartSemana.resize();
-    }).observe(wrapChartSemanaEl);
-  }
-
-  $('clearEquipoFilter').addEventListener('click', () => { selectedEquipo = null; render(); });$('clearTipoFilter').addEventListener('click', () => { selectedTipo = null; render(); });
-  $('clearClaseFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });$('clearClaseChartFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
-  $('clearSemanaFilter').addEventListener('click', () => {$('filterSemana').value = ''; render(); });
-
-  // Intento de carga automática al abrir la página
-  async function tryAutoLoad() {
-    const possibleNames = ["Analisis_pwq.xlsx", "Analisis pwq.xlsx", "Analisis%20pwq.xlsx"];
-    for (const name of possibleNames) {
-      try {
-        const res = await fetch(name, { cache: 'no-cache' });
-        if (res.ok) {
-          const arrayBuffer = await res.arrayBuffer();
-          const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
-          processWorkbook(wb);
-          return;
-        }
-      } catch (e) {}
-    }
-  }
-
-  window.addEventListener('DOMContentLoaded', tryAutoLoad);
-
   function processWorkbook(wb){
-    const targetSheetName = wb.SheetNames.find(s => normalizeStr(s).includes('digitac')) || wb.SheetNames[0];
-    const sheet = wb.Sheets[targetSheetName];
-
-    if (!sheet) {
-      showLoadError('No se encontró ninguna pestaña compatible en el archivo Excel.');
+    if (!wb.SheetNames || wb.SheetNames.length === 0) {
+      showLoadError("El archivo Excel no contiene pestañas válidas.");
       return;
     }
 
+    // Tomar la primera pestaña o la que tenga datos
+    const sheetName = wb.SheetNames[0];
+    const sheet = wb.Sheets[sheetName];
     const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+
     if (!json || json.length === 0) {
-      showLoadError('La pestaña encontrada está vacía o no contiene filas válidas.');
+      showLoadError(`La pestaña "${sheetName}" está vacía.`);
       return;
     }
 
@@ -398,14 +161,6 @@
     if (!v) return 0;
     const n = parseFloat(String(v).replace(',', '.'));
     return isNaN(n) ? 0 : n;
-  }
-
-  function getISOWeek(date){
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   }
 
   function parseFecha(v){
@@ -422,483 +177,54 @@
   }
 
   function processData(json){
-    const sample = json[0] || {};
-    const keys = Object.keys(sample);
+    try {
+      const sample = json[0] || {};
+      const keys = Object.keys(sample);
+      const findKey = (cands) => keys.find(k => cands.some(c => k.toLowerCase().includes(c.toLowerCase()))) || cands[0];
 
-    const findKey = (candidates) => keys.find(k => candidates.some(c => normalizeStr(k).includes(normalizeStr(c)))) || candidates[0];
+      const kEquipo = findKey(['Equipo', 'Identificación', 'Operario']);
+      const kClase = findKey(['Clase', 'Centro', 'Bodega']);
+      const kFecha = findKey(['Fecha', 'fecha']);
+      const kHorasDisp = findKey(['Horas_Disponibles', 'horometro_final']);
+      const kHorasProd = findKey(['Horas_Producción', 'Produccion']);
+      const kHorasVarado = findKey(['Horas_Varado', 'Varado']);
 
-    const kEquipo = findKey(['Equipo', 'Nombres Operario', 'Identificación']);
-    const kClase = findKey(['Clase', 'Descripción Centro', 'bodega']);
-    const kDesTipo = findKey(['des_tipo', 'turno']);
-    const kHoras = findKey(['horas', 'horometro_final', 'horometro_inicial']);
-    const kFecha = findKey(['fecha', 'Fecha']);
-    const kNotas = findKey(['notas', 'Notas', 'Observacion']);
-    const kSemana = findKey(['Semana', 'semana']);
+      const rows = [];
+      json.forEach(r => {
+        const fecha = parseFecha(r[kFecha]);
+        const equipo = String(r[kEquipo] ?? '').trim();
+        const clase = String(r[kClase] ?? 'General').trim() || 'General';
+        const mesKey = fecha ? `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}` : 'Sin fecha';
+        
+        const valDisp = parseHoras(r[kHorasDisp]);
+        const valProd = parseHoras(r[kHorasProd]);
+        const valVarado = parseHoras(r[kHorasVarado]);
 
-    const kHorasDisp = findKey(['Horas_Disponibles', 'horometro_final']);
-    const kHorasProd = findKey(['Horas_Producción']);
-    const kHorasVarado = findKey(['Horas_Varado']);
-
-    const rows = [];
-    json.forEach(r => {
-      const fecha = parseFecha(r[kFecha]);
-      const equipo = String(r[kEquipo] ?? '').trim();
-
-      const mesKey = fecha ? `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}` : 'Sin fecha';
-      const mesLabel = fecha ? `${MESES[fecha.getMonth()]} ${String(fecha.getFullYear()).slice(-2)}` : 'Sin fecha';
-      mesLabels[mesKey] = mesLabel;
-
-      const semanaCruda = r[kSemana];
-      let semana, semanaOrder;
-      if (semanaCruda !== undefined && String(semanaCruda).trim() !== '') {
-        semana = String(semanaCruda).trim();
-        const digitos = semana.match(/\d+/);
-        semanaOrder = fecha ? (fecha.getFullYear() * 100 + getISOWeek(fecha)) : (digitos ? parseInt(digitos[0], 10) : 0);
-      } else if (fecha) {
-        const isoWeek = getISOWeek(fecha);
-        semana = `Sem ${isoWeek}`;
-        semanaOrder = fecha.getFullYear() * 100 + isoWeek;
-      } else {
-        semana = 'Sin semana';
-        semanaOrder = 0;
-      }
-
-      const valDisp = parseHoras(r[kHorasDisp]);
-      const valProd = parseHoras(r[kHorasProd]);
-      const valVarado = parseHoras(r[kHorasVarado]);
-
-      const clase = String(r[kClase] ?? 'General').trim() || 'General';
-
-      if (valDisp > 0 || valProd > 0 || valVarado > 0) {
-        if (valProd > 0) rows.push({ equipo: equipo || 'Equipo General', clase, grupo: clase, desTipo: 'Producción', horas: valProd, mesKey, mesLabel, semana, semanaOrder, notas: '' });
-        if (valDisp > 0) rows.push({ equipo: equipo || 'Equipo General', clase, grupo: clase, desTipo: 'Disponible', horas: valDisp, mesKey, mesLabel, semana, semanaOrder, notas: '' });
-        if (valVarado > 0) rows.push({ equipo: equipo || 'Equipo General', clase, grupo: clase, desTipo: 'Varado', horas: valVarado, mesKey, mesLabel, semana, semanaOrder, notas: String(r[kNotas] ?? '').trim() });
-      } else {
-        const hVal = parseHoras(r[kHoras]);
-        if (hVal > 0 || equipo) {
-          rows.push({
-            equipo: equipo || 'Equipo General',
-            clase,
-            grupo: clase,
-            desTipo: String(r[kDesTipo] ?? 'Disponible').trim(),
-            horas: hVal || 1,
-            mesKey,
-            mesLabel,
-            semana,
-            semanaOrder,
-            notas: String(r[kNotas] ?? '').trim()
-          });
+        if (valDisp > 0 || valProd > 0 || valVarado > 0) {
+          if (valProd > 0) rows.push({ equipo: equipo || 'General', clase, grupo: clase, desTipo: 'Producción', horas: valProd, mesKey });
+          if (valDisp > 0) rows.push({ equipo: equipo || 'General', clase, grupo: clase, desTipo: 'Disponible', horas: valDisp, mesKey });
+          if (valVarado > 0) rows.push({ equipo: equipo || 'General', clase, grupo: clase, desTipo: 'Varado', horas: valVarado, mesKey });
         }
+      });
+
+      if (rows.length === 0) {
+        showLoadError(`No se pudieron extraer registros válidos. Columnas detectadas en tu archivo: <br><code>${keys.join(', ')}</code>`);
+        return;
       }
-    });
 
-    if (!rows.length) {
-      showLoadError('No se encontraron registros de datos interpretables en el archivo.');
-      return;
+      RAW = rows;
+      $('loaderScreen').classList.add('hidden');$('dashboard').classList.remove('hidden');
+      render();
+    } catch (err) {
+      showLoadError(`Error mapeando las columnas: ${err.message}`);
     }
-
-    RAW = agruparYCalcularHoras(rows);
-    initFilters();
-    $('loaderScreen').classList.add('hidden');$('dashboard').classList.remove('hidden');
-    render();
-  }
-
-  function agruparYCalcularHoras(rows){
-    return rows.map(r => {
-      let tipoNorm = normalizeStr(r.desTipo);
-      let tipoFinal = 'Disponible';
-      if (tipoNorm.includes('prod')) tipoFinal = 'Producción';
-      else if (tipoNorm.includes('varad')) tipoFinal = 'Varado';
-      else if (tipoNorm.includes('disp')) tipoFinal = 'Disponible';
-      return { ...r, desTipo: tipoFinal };
-    });
-  }
-
-  function initFilters(){
-    const grupos = [...new Set(RAW.map(r => r.grupo))].sort();
-    const selGrupo = $('filterGrupo');
-    selGrupo.innerHTML = '<option value="">Todos los Grupos</option>' + grupos.map(g => `<option value="${g}">${g}</option>`).join('');
-    selGrupo.onchange = () => { selectedEquipo = null; selectedTipo = null; selectedClaseTabla = null; render(); };
-
-    const meses = [...new Set(RAW.map(r => r.mesKey))].sort();
-    const selMes = $('filterMes');
-    selMes.innerHTML = '<option value="">Todos los meses</option>' + meses.map(m => `<option value="${m}">${mesLabels[m] || m}</option>`).join('');
-    selMes.onchange = () => { selectedEquipo = null; selectedTipo = null; selectedClaseTabla = null; render(); };
-
-    const semanaOrderMap = {};
-    RAW.forEach(r => { semanaOrderMap[r.semana] = r.semanaOrder; });
-    const semanas = Object.keys(semanaOrderMap).sort((a, b) => semanaOrderMap[a] - semanaOrderMap[b]);
-    const selSemana = $('filterSemana');
-    selSemana.innerHTML = '<option value="">Todas las semanas</option>' + semanas.map(s => `<option value="${s}">${s}</option>`).join('');
-    selSemana.onchange = () => { selectedEquipo = null; selectedTipo = null; selectedClaseTabla = null; render(); };
-  }
-
-  function getFiltered(excludeSemana){
-    const g = $('filterGrupo').value;
-    const m = $('filterMes').value;
-    const s = $('filterSemana').value;
-    return RAW.filter(r => {
-      const matchGrupo = !g || r.grupo === g;
-      const matchMes = !m || r.mesKey === m;
-      const matchSemana = excludeSemana || !s || r.semana === s;
-      const matchEquipo = !selectedEquipo || r.equipo === selectedEquipo;
-      const matchTipo = !selectedTipo || r.desTipo === selectedTipo;
-      const matchClaseTabla = !selectedClaseTabla || r.clase === selectedClaseTabla.clase;
-      return matchGrupo && matchMes && matchSemana && matchEquipo && matchTipo && matchClaseTabla;
-    });
-  }
-
-  function fitTable(wrapId, tableId, startFont, minFontIn, startPad, minPadIn){
-    const wrap = $(wrapId);
-    const table = $(tableId);
-    if (!wrap || !table) return;
-
-    let fontSize = startFont || 11, pad = startPad != null ? startPad : 4, lineHeight = 1.25;
-    const minFont = minFontIn || 4.5, minPad = minPadIn != null ? minPadIn : 0, minLineHeight = 1;
-
-    const apply = () => {
-      table.style.fontSize = fontSize + 'px';
-      table.style.lineHeight = lineHeight;
-      table.querySelectorAll('th,td').forEach(el => { el.style.padding = pad + 'px'; el.style.lineHeight = lineHeight; });
-    };
-
-    apply();
-    let guard = 0;
-    while (table.scrollHeight > wrap.clientHeight && (fontSize > minFont || pad > minPad || lineHeight > minLineHeight) && guard < 140) {
-      if (lineHeight > minLineHeight) lineHeight = +(lineHeight - 0.05).toFixed(2);
-      else if (pad > minPad) pad = +(pad - 0.25).toFixed(2);
-      else fontSize = +(fontSize - 0.25).toFixed(2);
-      apply();
-      guard++;
-    }
-    wrap.style.overflowY = (table.scrollHeight > wrap.clientHeight) ? 'auto' : 'hidden';
   }
 
   function render(){
-    const data = getFiltered();
-
-    const sum = (pred) => data.filter(pred).reduce((a, r) => a + r.horas, 0);
-    const horasProd = sum(r => r.desTipo === 'Producción');
-    const horasDisp = sum(r => r.desTipo === 'Disponible');
-    const horasVarado = sum(r => r.desTipo === 'Varado');
-
-    const horasTotales = horasDisp + horasProd + horasVarado;
-    const pctDisponibilidad = horasTotales > 0 ? ((horasTotales - horasVarado) / horasTotales) * 100 : 0;
-    const pctDisponibilidadObra = horasTotales > 0 ? (horasDisp / horasTotales) * 100 : 0;
-    const horasDispMecanica = horasProd + horasDisp;
-    const pctUtilizacion = horasDispMecanica > 0 ? (horasProd / horasDispMecanica) * 100 : 0;
-
-    const equiposUnicos = new Set(data.map(r => r.equipo)).size;
-    const equiposVaradosSet = new Set(data.filter(r => r.desTipo === 'Varado').map(r => r.equipo));
-
-    const varadoMap = {};
-    data.filter(r => r.desTipo === 'Varado').forEach(r => varadoMap[r.clase] = (varadoMap[r.clase] || 0) + r.horas);
-    const topVarado = Object.entries(varadoMap).sort((a,b) => b[1]-a[1])[0];
-
+    const equiposUnicos = new Set(RAW.map(r => r.equipo)).size;
     $('kpiEquipos').textContent = equiposUnicos;
-    $('kpiDisp').textContent = pctDisponibilidad.toFixed(1) + '%';
-    const isOptimo = pctDisponibilidad >= 70;
-    $('kpiDispBadge').textContent = isOptimo ? 'ÓPTIMO' : 'CRÍTICO';
-    $('kpiDispBadge').className = `badge border ${isOptimo ? 'bg-green/10 text-green border-green/30' : 'bg-red/10 text-red border-red/30'}`;
-
-    $('kpiDispObra').textContent = pctDisponibilidadObra.toFixed(1) + '\%';$('kpiTotalHoras').textContent = Math.round(horasTotales).toLocaleString();
-    const nombreClaseVarado = topVarado ? topVarado[0] : 'Ninguna';
-    $('kpiClaseVarado').textContent = nombreClaseVarado;
-    $('kpiClaseVaradoHrs').textContent = topVarado ? `${Math.round(topVarado[1])} h varadas` : '0 h varadas';
-
-    $('kpiHorasProd').textContent = Math.round(horasProd).toLocaleString();$('kpiPctProd').textContent = (horasTotales ? (horasProd/horasTotales*100) : 0).toFixed(1) + '%';
-
-    $('kpiHorasDisp').textContent = Math.round(horasDisp).toLocaleString();$('kpiPctDisp').textContent = (horasTotales ? (horasDisp/horasTotales*100) : 0).toFixed(1) + '%';
-
-    $('kpiHorasVarado').textContent = Math.round(horasVarado).toLocaleString();$('kpiPctVarado').textContent = (horasTotales ? (horasVarado/horasTotales*100) : 0).toFixed(1) + '%';
-
-    $('kpiEquiposVarados').textContent = equiposVaradosSet.size;
-    const pctVaradosCount = equiposUnicos ? (equiposVaradosSet.size / equiposUnicos * 100) : 0;
-    $('kpiEquiposVaradosSub').textContent = `${equiposVaradosSet.size} de ${equiposUnicos} (${pctVaradosCount.toFixed(1)}%)`;
-
-    $('kpiUtilGlobal').textContent = pctUtilizacion.toFixed(1) + '%';
-
-    const dataTodasSemanas = getFiltered(true);
-
-    renderDonut(horasProd, horasDisp, horasVarado, horasTotales);
-    renderTblClase(data);
-    renderChartResumen(data);
-    renderTblVarados(data, horasVarado);
-    renderChartSemana(dataTodasSemanas);
-    renderDesviaciones(dataTodasSemanas);
-
-    const semanaBadge = $('semanaFilterBadge');
-    const semanaSeleccionada = $('filterSemana').value;
-    if (semanaSeleccionada) {
-      $('semanaFilterName').textContent = semanaSeleccionada;
-      semanaBadge.classList.remove('hidden');
-      semanaBadge.classList.add('flex');
-    } else {
-      semanaBadge.classList.add('hidden');
-      semanaBadge.classList.remove('flex');
-    }
-
-    const badge = $('equipoFilterBadge');
-    if (selectedEquipo) {
-      $('equipoFilterName').textContent = selectedEquipo;
-      badge.classList.remove('hidden');
-      badge.classList.add('flex');
-    } else {
-      badge.classList.add('hidden');
-      badge.classList.remove('flex');
-    }
-
-    const tipoBadge = $('tipoFilterBadge');
-    if (selectedTipo) {
-      $('tipoFilterName').textContent = selectedTipo;
-      tipoBadge.classList.remove('hidden');
-      tipoBadge.classList.add('flex');
-    } else {
-      tipoBadge.classList.add('hidden');
-      tipoBadge.classList.remove('flex');
-    }
-
-    const claseChartBadge = $('claseChartFilterBadge');
-    if (selectedClaseTabla && selectedClaseTabla.clase) {
-      $('claseChartFilterName').textContent = selectedClaseTabla.clase;
-      claseChartBadge.classList.remove('hidden');
-      claseChartBadge.classList.add('flex');
-    } else {
-      claseChartBadge.classList.add('hidden');
-      claseChartBadge.classList.remove('flex');
-    }
-
-    const btnClase = $('clearClaseFilter');
-    if (selectedClaseTabla) btnClase.classList.remove('hidden');
-    else btnClase.classList.add('hidden');
-
-    requestAnimationFrame(() => {
-      fitTable('wrapVarados', 'tblVaradosTable', 11.5, 5, 4, 0);
-      fitTable('wrapDesviacion', 'tblDesviacionTable', 10.5, 6.5, 3, 0.5);
-    });
   }
-
-  function renderDonut(prod, disp, varado, total){
-    if (chartDonut) chartDonut.destroy();
-    const ctx = $('chartDonut').getContext('2d');
-
-    chartDonut = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Producción', 'Disponible', 'Varado'],
-        datasets: [{
-          data: [prod, disp, varado],
-          backgroundColor: [COLORS.prod, COLORS.disp, COLORS.varado],
-          borderWidth: 2,
-          borderColor: '#FFFFFF'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '65%',
-        onClick: (evt, elements, chart) => {
-          if (!elements.length) return;
-          const clickedTipo = chart.data.labels[elements[0].index];
-          selectedTipo = (selectedTipo === clickedTipo) ? null : clickedTipo;
-          render();
-        },
-        plugins: {
-          legend: {
-            position: 'right',
-            labels: {
-              boxWidth: 9, padding: 6, font: { size: 10, weight: '600' }, color: '#0F172A',
-              generateLabels: (chart) => {
-                const ds = chart.data.datasets[0];
-                const totalVal = ds.data.reduce((a, b) => a + b, 0);
-                return chart.data.labels.map((label, i) => {
-                  const value = ds.data[i];
-                  const pct = totalVal > 0 ? ((value / totalVal) * 100).toFixed(1) : '0.0';
-                  return { text: `${label}: ${Math.round(value)}h (${pct}%)`, fillStyle: ds.backgroundColor[i], strokeStyle: ds.backgroundColor[i], index: i };
-                });
-              }
-            }
-          },
-          datalabels: {
-            color: '#0F172A',
-            font: { size: 10, weight: 'bold' },
-            formatter: (value) => {
-              if (!value || total === 0) return '';
-              const pct = ((value / total) * 100).toFixed(1);
-              return `${Math.round(value)}h\n(${pct}%)`;
-            }
-          }
-        }
-      }
-    });
-  }
-
-  function claseResumenMap(data){
-    const map = {};
-    data.forEach(r => {
-      if (!map[r.clase]) map[r.clase] = { prod: 0, disp: 0, varado: 0 };
-      if (r.desTipo === 'Producción') map[r.clase].prod += r.horas;
-      else if (r.desTipo === 'Disponible') map[r.clase].disp += r.horas;
-      else if (r.desTipo === 'Varado') map[r.clase].varado += r.horas;
-    });
-    return map;
-  }
-
-  function claseCountMap(data){
-    const map = {};
-    data.forEach(r => {
-      if (!map[r.clase]) map[r.clase] = new Set();
-      map[r.clase].add(r.equipo);
-    });
-    return map;
-  }
-
-  function renderTblClase(data){
-    const map = claseCountMap(data);
-    const tbody = $('tblClase');
-    const totalEquipos = new Set(data.map(r => r.equipo)).size;
-
-    tbody.innerHTML = Object.entries(map)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([clase, equipos]) => {
-        const isSelected = selectedClaseTabla && selectedClaseTabla.clase === clase;
-        const bgClass = isSelected ? 'bg-cyan/20 font-bold text-cyan' : 'hover:bg-panel2/60';
-        return `<tr class="cursor-pointer transition-colors ${bgClass} border-b border-border" data-clase="${clase}">
-          <td class="p-1.5 text-ink">${clase}</td>
-          <td class="p-1.5 text-right mono text-sub">${equipos.size}</td>
-        </tr>`;
-      }).join('');
-
-    $('tblClaseTotal').textContent = totalEquipos;
-
-    tbody.querySelectorAll('tr').forEach(tr => {
-      tr.addEventListener('click', () => {
-        const c = tr.getAttribute('data-clase');
-        selectedClaseTabla = (selectedClaseTabla && selectedClaseTabla.clase === c) ? null : { clase: c };
-        render();
-      });
-    });
-  }
-
-  function renderChartResumen(data){
-    const map = claseResumenMap(data);
-    let entries = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0])).filter(([, v]) => (v.prod + v.varado + v.disp) > 0);
-
-    const labels = entries.map(([k]) => k);
-    const pctTrabajado = entries.map(([, v]) => { const h = v.disp + v.prod + v.varado; return h > 0 ? +((v.prod / h) * 100).toFixed(1) : 0; });
-    const pctVarado = entries.map(([, v]) => { const h = v.disp + v.prod + v.varado; return h > 0 ? +((v.varado / h) * 100).toFixed(1) : 0; });
-    const pctDisponible = entries.map(([, v]) => { const h = v.disp + v.prod + v.varado; return h > 0 ? +((v.disp / h) * 100).toFixed(1) : 0; });
-
-    if (chartResumen) chartResumen.destroy();
-    const canvas = $('chartResumen');
-    const ctx = canvas.getContext('2d');
-
-    chartResumen = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          { label: '% Trabajado', data: pctTrabajado, backgroundColor: '#1E3A8A', stack: 'total' },
-          { label: '% Varado', data: pctVarado, backgroundColor: '#38BDF8', stack: 'total' },
-          { label: '% Disponible', data: pctDisponible, backgroundColor: '#94A3B8', stack: 'total' }
-        ]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { stacked: true, min: 0, max: 100, ticks: { callback: (v) => v + '%' } },
-          y: { stacked: true }
-        }
-      }
-    });
-  }
-
-  function semanaMap(data){
-    const map = {};
-    data.forEach(r => {
-      if (!map[r.semana]) map[r.semana] = { order: r.semanaOrder, prod: 0, disp: 0, varado: 0 };
-      if (r.desTipo === 'Producción') map[r.semana].prod += r.horas;
-      else if (r.desTipo === 'Disponible') map[r.semana].disp += r.horas;
-      else if (r.desTipo === 'Varado') map[r.semana].varado += r.horas;
-    });
-    return map;
-  }
-
-  function renderChartSemana(data){
-    const map = semanaMap(data);
-    const entries = Object.entries(map).sort((a, b) => a[1].order - b[1].order);
-    const labels = entries.map(([k]) => k);
-
-    const pctUtilSemana = entries.map(([, v]) => { const h = v.disp + v.prod; return h > 0 ? +((v.prod / h) * 100).toFixed(1) : 0; });
-    const pctDispSemana = entries.map(([, v]) => { const h = v.disp + v.prod; return h > 0 ? +(((h - v.varado) / h) * 100).toFixed(1) : 0; });
-
-    if (chartSemana) chartSemana.destroy();
-    const ctx = $('chartSemana').getContext('2d');
-
-    chartSemana = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          { label: '% Utilización', data: pctUtilSemana, borderColor: COLORS.prod, tension: 0.3 },
-          { label: '% Disponibilidad', data: pctDispSemana, borderColor: COLORS.disp, tension: 0.3 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: { y: { min: 0, max: 100 } }
-      }
-    });
-  }
-
-  function renderDesviaciones(data){
-    const map = semanaMap(data);
-    const entries = Object.entries(map).filter(([k]) => k !== 'Sin semana').sort((a, b) => a[1].order - b[1].order);
-
-    const calc = entries.map(([semana, v]) => {
-      const h = v.disp + v.prod;
-      return { semana, pctDisp: h > 0 ? ((h - v.varado) / h) * 100 : 0, pctUtil: h > 0 ? (v.prod / h) * 100 : 0 };
-    });
-
-    const promDisp = calc.length ? calc.reduce((a, c) => a + c.pctDisp, 0) / calc.length : 0;
-    const promUtil = calc.length ? calc.reduce((a, c) => a + c.pctUtil, 0) / calc.length : 0;
-
-    $('promDispLabel').textContent = promDisp.toFixed(1) + '\%';$('promUtilLabel').textContent = promUtil.toFixed(1) + '%';
-
-    $('tblDesviacion').innerHTML = calc.map(c => {
-      const dev = c.pctDisp - promDisp;
-      return `<tr class="border-b border-border">
-        <td class="p-1 text-ink mono">${c.semana}</td>
-        <td class="p-1 text-right mono">${c.pctDisp.toFixed(1)}%</td>
-        <td class="p-1 text-right mono font-semibold ${dev < 0 ? 'text-red' : 'text-green'}">${dev.toFixed(1)} pts</td>
-      </tr>`;
-    }).join('');
-  }
-
-  function renderTblVarados(data, totalVarado){
-    const map = {};
-    data.filter(r => r.desTipo === 'Varado').forEach(r => {
-      if (!map[r.equipo]) map[r.equipo] = { clase: r.clase, horas: 0, causa: r.notas || 'Sin causa' };
-      map[r.equipo].horas += r.horas;
-    });
-
-    $('tblVarados').innerHTML = Object.entries(map).sort((a,b) => b[1].horas - a[1].horas).map(([eq, b]) => {
-      const pct = totalVarado > 0 ? (b.horas / totalVarado) * 100 : 0;
-      return `<tr class="hover:bg-panel2/60" data-equipo="${eq}">
-        <td class="p-1 font-semibold text-ink mono">${eq}</td>
-        <td class="p-1 text-sub">${b.clase}</td>
-        <td class="p-1 text-right mono text-orange">${Math.round(b.horas)}</td>
-        <td class="p-1 text-right mono text-red">${pct.toFixed(1)}%</td>
-        <td class="p-1 text-sub truncate">${b.causa}</td>
-      </tr>`;
-    }).join('');
-  }
-
 })();
 </script>
-
 </body>
 </html>
