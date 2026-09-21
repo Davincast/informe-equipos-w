@@ -1,156 +1,915 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Informe Ejecutivo · Disponibilidad de Equipos</title>
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            bg: '#F8FAFC', panel: '#FFFFFF', panel2: '#F1F5F9', border: '#E2E8F0',
-            cyan: '#0891B2', green: '#059669', orange: '#EA580C', red: '#DC2626',
-            purple: '#7C3AED', ink: '#0F172A', sub: '#64748B',
-          }
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Informe Ejecutivo · Disponibilidad de Equipos</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+  tailwind = { config: {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#F8FAFC', panel: '#FFFFFF', panel2: '#F1F5F9', border: '#E2E8F0',
+          cyan: '#0891B2', green: '#059669', orange: '#EA580C', red: '#DC2626',
+          purple: '#7C3AED', ink: '#0F172A', sub: '#64748B',
         }
       }
     }
-  </script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <style>
-    html, body { background: #F8FAFC; font-family: 'Inter', sans-serif; }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: #F1F5F9; }
-    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
-    .badge { display:inline-flex; align-items:center; gap:2px; font-size:9px; font-weight:700; padding:1px 4px; border-radius:9999px; line-height: 1; }
-  </style>
+  }};
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { background: #F8FAFC; font-family: 'Inter', sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #F1F5F9; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+  .badge { display:inline-flex; align-items:center; gap:2px; font-size:9px; font-weight:700; padding:1px 4px; border-radius:9999px; line-height: 1; }
+</style>
 </head>
 <body class="bg-bg text-ink h-screen overflow-hidden flex flex-col">
 
-<!-- PANTALLA DE CARGA -->
-<div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
-  <div class="max-w-md w-full text-center bg-panel p-6 rounded-xl border border-border shadow-sm">
-    <div id="spinner" class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan mb-3"></div>
-    <h1 class="text-xl font-bold text-ink mb-1">Cargando Informe Ejecutivo...</h1>
-    <p class="text-sub text-xs mb-4">Conectando con <code class="text-cyan">Analisis_pwq.xlsx</code> (Pestaña: Digitacion)</p>
+<!-- DASHBOARD (CARGA DIRECTA AUTOMÁTICA) -->
+<div id="dashboard" class="h-full w-full flex flex-col p-2 gap-2 overflow-hidden">
 
-    <div class="mb-4">
-      <label for="fileInput" class="block w-full cursor-pointer bg-cyan/10 hover:bg-cyan/25 border border-cyan/30 text-cyan text-xs font-semibold py-3 px-4 rounded-lg transition-colors">
-        📁 O selecciona tu archivo manualmente aquí
-      </label>
-      <input type="file" id="fileInput" accept=".xlsx, .xls" class="hidden">
-    </div>
-
-    <div id="loadError" class="hidden text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left max-h-40 overflow-y-auto"></div>
-  </div>
-</div>
-
-<!-- DASHBOARD PRINCIPAL -->
-<div id="dashboard" class="hidden h-full w-full flex flex-col p-2 gap-2 overflow-hidden">
+  <!-- Header / Filtros -->
   <header class="flex items-center justify-between bg-panel2 border border-border px-3 py-1.5 rounded-lg flex-shrink-0">
     <div class="flex items-center gap-2">
       <div class="w-6 h-6 rounded bg-gradient-to-br from-cyan to-purple flex items-center justify-center font-bold text-white text-xs">IE</div>
       <h1 class="font-bold text-xs md:text-sm text-ink leading-none">Informe Ejecutivo — Disponibilidad y Eficiencia de Equipos</h1>
-      <span class="badge bg-green/10 text-green border border-green/30 text-[10px]">Digitacion</span>
+      <span class="badge bg-green/10 text-green border border-green/30 text-[10px]">EPC - VIA LACTEA</span>
     </div>
+
     <div class="flex items-center gap-3">
-      <button id="reloadBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel text-sub hover:bg-panel2">Cargar otro archivo</button>
+      <!-- Filtro Grupo (Clase) -->
+      <div class="flex items-center gap-1.5">
+        <label for="filterGrupo" class="text-xs text-sub font-medium">Grupo:</label>
+        <select id="filterGrupo" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
+      </div>
+
+      <!-- Filtro Fecha / Mes -->
+      <div class="flex items-center gap-1.5">
+        <label for="filterMes" class="text-xs text-sub font-medium">Filtrar por Mes:</label>
+        <select id="filterMes" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
+      </div>
+
+      <!-- Filtro Semana -->
+      <div class="flex items-center gap-1.5">
+        <label for="filterSemana" class="text-xs text-sub font-medium">Semana:</label>
+        <select id="filterSemana" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
+      </div>
     </div>
   </header>
 
-  <!-- KPIs -->
+  <!-- Fila 1 (Fija): 9 KPIs -->
   <section class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-1 flex-shrink-0">
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Equipos Únicos</p><p id="kpiEquipos" class="text-sm font-black text-ink mono">0</p></div>
     <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
-      <div class="flex items-center justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Disp. Mecánica</p><span id="kpiDispBadge" class="badge bg-green/10 text-green border border-green/30">ÓPTIMO</span></div>
-      <p id="kpiDisp" class="text-sm font-black text-green mono">0%</p>
+      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Equipos Únicos</p>
+      <p id="kpiEquipos" class="text-sm font-black text-ink mono leading-tight my-0">0</p>
+      <p class="text-[7px] text-sub truncate">Activos en el proyecto</p>
     </div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Disp. Obra</p><p id="kpiDispObra" class="text-sm font-black text-cyan mono">0%</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Horas Totales</p><p id="kpiTotalHoras" class="text-sm font-black text-ink mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Mayor Varado</p><p id="kpiClaseVarado" class="text-[9px] font-bold text-ink">—</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Producción</p><p id="kpiHorasProd" class="text-sm font-black text-cyan mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Disponibles</p><p id="kpiHorasDisp" class="text-sm font-black text-green mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Hrs Varadas</p><p id="kpiHorasVarado" class="text-sm font-black text-orange mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">Equipos Varados</p><p id="kpiEquiposVarados" class="text-sm font-black text-red mono">0</p></div>
-    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between"><p class="text-[8px] text-sub uppercase mono font-semibold">% Utilización</p><p id="kpiUtilGlobal" class="text-sm font-black text-purple mono">0%</p></div>
+
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+      <div class="flex items-center justify-between gap-1">
+        <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight break-words">% Disp. Mecánica</p>
+        <span id="kpiDispBadge" class="badge bg-green/10 text-green border border-green/30 shrink-0">ÓPTIMO</span>
+      </div>
+      <p id="kpiDisp" class="text-sm font-black text-green mono leading-tight my-0">0%</p>
+    </div>
+
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight break-words">% Disp. Eq. en Obra</p>
+      <p id="kpiDispObra" class="text-sm font-black text-cyan mono leading-tight my-0">0%</p>
+    </div>
+
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Horas Totales</p>
+      <p id="kpiTotalHoras" class="text-sm font-black text-ink mono leading-tight my-0">0</p>
+    </div>
+
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Mayor Varado</p>
+      <p id="kpiClaseVarado" class="text-[9px] font-bold text-ink leading-tight my-0 break-words">—</p>
+      <p id="kpiClaseVaradoHrs" class="text-[7px] text-orange mono font-semibold truncate">0 h varadas</p>
+    </div>
+
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Producción</p>
+      <p id="kpiHorasProd" class="text-sm font-black text-cyan mono leading-tight my-0">0</p>
+      <p class="text-[7px] text-sub mono truncate"><span id="kpiPctProd">0%</span> del total</p>
+    </div>
+
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Disponibles</p>
+      <p id="kpiHorasDisp" class="text-sm font-black text-green mono leading-tight my-0">0</p>
+      <p class="text-[7px] text-sub mono truncate"><span id="kpiPctDisp">0%</span> del total</p>
+    </div>
+
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Hrs Varadas</p>
+      <p id="kpiHorasVarado" class="text-sm font-black text-orange mono leading-tight my-0">0</p>
+      <p class="text-[7px] text-sub mono truncate"><span id="kpiPctVarado">0%</span> del total</p>
+    </div>
+
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">Equipos Varados</p>
+      <p id="kpiEquiposVarados" class="text-sm font-black text-red mono leading-tight my-0">0</p>
+      <p id="kpiEquiposVaradosSub" class="text-[7px] text-sub truncate">0% del total activos</p>
+    </div>
+
+    <div class="bg-panel border border-border rounded-lg px-1 py-0.5 shadow-sm flex flex-col justify-between">
+      <p class="text-[8px] text-sub uppercase mono font-semibold leading-tight">% Utilización</p>
+      <p id="kpiUtilGlobal" class="text-sm font-black text-purple mono leading-tight my-0">0%</p>
+    </div>
   </section>
 
-  <!-- SECCIÓN VISUAL -->
+  <!-- Fila 2 (Flexible): Donut + Tabla Cantidad Equipos + Diagnóstico de Varados -->
   <section class="grid grid-cols-1 md:grid-cols-9 gap-2 flex-[1.6] min-h-0">
-    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Distribución Horas</h3><div class="flex-1 relative min-h-0"><canvas id="chartDonut"></canvas></div></div>
-    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Equipos por Clase</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-sm"><tbody id="tblClase"></tbody></table></div></div>
-    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm"><h3 class="font-semibold text-xs text-ink mb-1">Diagnóstico Varados</h3><div class="flex-1 overflow-auto"><table class="w-full text-left text-xs"><tbody id="tblVarados"></tbody></table></div></div>
+    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
+      <div class="flex items-center justify-between mb-1 flex-shrink-0">
+        <h3 class="font-semibold text-xs text-ink">Distribución de Horas Totales</h3>
+        <div id="tipoFilterBadge" class="hidden items-center gap-1.5">
+          <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Filtrado por: <span id="tipoFilterName" class="mono"></span></span>
+          <button id="clearTipoFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
+        </div>
+      </div>
+      <div class="flex-1 relative min-h-0">
+        <canvas id="chartDonut"></canvas>
+      </div>
+    </div>
+
+    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
+      <div class="flex items-center justify-between mb-1 flex-shrink-0">
+        <h3 class="font-semibold text-xs text-ink truncate">Cantidad Equipos por Clase</h3>
+        <button id="clearClaseFilter" class="hidden text-[10px] text-red hover:underline font-medium shrink-0">Quitar ✕</button>
+      </div>
+      <div id="wrapClase" class="flex-1 min-h-0 border border-border rounded flex flex-col overflow-hidden">
+        <div class="flex-1 min-h-0 overflow-hidden">
+          <table id="tblClaseTable" class="w-full text-left text-sm border-collapse">
+            <thead class="bg-panel2 text-ink border-b border-border sticky top-0 z-10">
+              <tr>
+                <th class="p-1.5 uppercase font-bold tracking-wide">Equipo</th>
+                <th class="p-1.5 text-right uppercase font-bold tracking-wide">Cantidad</th>
+              </tr>
+            </thead>
+            <tbody id="tblClase"></tbody>
+          </table>
+        </div>
+        <table class="w-full text-left text-sm flex-shrink-0 border-t-2 border-border">
+          <tbody>
+            <tr class="bg-panel2 font-bold">
+              <td id="tblClaseTotalLabel" class="p-1.5 text-ink uppercase">TOTAL</td>
+              <td id="tblClaseTotal" class="p-1.5 text-right mono text-ink">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="md:col-span-3 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
+      <div class="flex items-center justify-between mb-1 flex-shrink-0">
+        <h3 class="font-semibold text-xs text-ink">Diagnóstico de Equipos Varados</h3>
+        <div id="equipoFilterBadge" class="hidden items-center gap-1.5">
+          <span class="badge bg-purple/10 text-purple border border-purple/30">Equipo: <span id="equipoFilterName" class="mono"></span></span>
+          <button id="clearEquipoFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
+        </div>
+      </div>
+      <div id="wrapVarados" class="overflow-hidden flex-1 min-h-0 border border-border rounded">
+        <table id="tblVaradosTable" class="w-full text-left text-[13px]">
+          <thead class="bg-panel2 text-sub uppercase mono border-b border-border">
+            <tr>
+              <th class="p-1.5">Equipo</th>
+              <th class="p-1.5">Clase</th>
+              <th class="p-1.5 text-right">Hrs Varado</th>
+              <th class="p-1.5 text-right">% Impacto</th>
+              <th class="p-1.5">Causa Contextualizada</th>
+            </tr>
+          </thead>
+          <tbody id="tblVarados" class="divide-y divide-border"></tbody>
+        </table>
+      </div>
+    </div>
   </section>
+
+  <!-- Fila 3 (Flexible): Resumen por Clase + Semana/Desviaciones -->
+  <section class="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-[2.6] min-h-0">
+    <div class="lg:col-span-8 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
+      <div class="flex items-center justify-between mb-0.5 flex-shrink-0">
+        <h3 class="font-semibold text-[11px] text-ink">Relación Trabajado - Varado - Disponible por Grupo de Equipos</h3>
+        <div id="claseChartFilterBadge" class="hidden items-center gap-1.5">
+          <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Clase: <span id="claseChartFilterName" class="mono"></span></span>
+          <button id="clearClaseChartFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
+        </div>
+      </div>
+      <div id="wrapChartResumen" class="flex-1 relative min-h-0 overflow-hidden">
+        <canvas id="chartResumen"></canvas>
+      </div>
+    </div>
+
+    <div class="lg:col-span-4 flex flex-col gap-2 min-h-0">
+      <div class="flex-[1.5] bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
+        <div class="flex items-center justify-between mb-1 flex-shrink-0">
+          <h3 class="font-semibold text-xs text-ink">% Utilización y % Disponibilidad por Semana</h3>
+          <div id="semanaFilterBadge" class="hidden items-center gap-1.5">
+            <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Semana: <span id="semanaFilterName" class="mono"></span></span>
+            <button id="clearSemanaFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
+          </div>
+        </div>
+        <div id="wrapChartSemana" class="flex-1 relative min-h-[130px]">
+          <canvas id="chartSemana"></canvas>
+        </div>
+      </div>
+
+      <div class="flex-1 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
+        <div class="flex items-center justify-between mb-1 flex-shrink-0">
+          <h3 class="font-semibold text-xs text-ink">Desviaciones vs. Promedio Semanal</h3>
+        </div>
+        <p class="text-[9px] text-sub mb-1 flex-shrink-0">Prom. %Disp: <span id="promDispLabel" class="mono font-semibold text-ink">0%</span> · Prom. %Util: <span id="promUtilLabel" class="mono font-semibold text-ink">0%</span></p>
+        <div id="wrapDesviacion" class="flex-1 min-h-0 border border-border rounded overflow-hidden flex flex-col">
+          <table id="tblDesviacionTable" class="w-full text-left text-[10px]">
+            <thead class="bg-panel2 text-sub uppercase mono border-b border-border sticky top-0 z-10">
+              <tr>
+                <th class="p-1">Semana</th>
+                <th class="p-1 text-right">%Disp</th>
+                <th class="p-1 text-right">Desviación</th>
+              </tr>
+            </thead>
+            <tbody id="tblDesviacion" class="divide-y divide-border"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <script>
 (function(){
+  const CENTRO_FIJO = "EPC - VIA LACTEA";
+  const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const COLORS = { prod:'#0891B2', disp:'#059669', varado:'#EA580C', orange:'#EA580C', purple:'#7C3AED', green:'#059669' };
+
   let RAW = [];
+  let TOTAL_FLOTA = 0;
+  let chartDonut = null;
+  let chartResumen = null;
+  let chartSemana = null;
+  let selectedEquipo = null;
+  let selectedTipo = null;
+  let selectedClaseTabla = null;
+  const mesLabels = {};
+
   const $ = (id) => document.getElementById(id);
+
   Chart.register(ChartDataLabels);
 
-  function showError(msg){
-    const el = $('loadError');
-    el.innerHTML = msg;
-    el.classList.remove('hidden');
-    $('spinner').classList.add('hidden');
+  function normalizeStr(v){
+    return String(v ?? '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
-  $('reloadBtn').addEventListener('click', () => {
-    $('dashboard').classList.add('hidden');$('loaderScreen').classList.remove('hidden');
-    $('loadError').classList.add('hidden');$('spinner').classList.remove('hidden');
+  window.addEventListener('resize', () => {
+    render();
   });
 
-  $('fileInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => processWorkbook(XLSX.read(new Uint8Array(evt.target.result), { type: 'array', cellDates: true }));
-    reader.readAsArrayBuffer(file);
+  const wrapChartSemanaEl = $('wrapChartSemana');
+  if (wrapChartSemanaEl && 'ResizeObserver' in window) {
+    new ResizeObserver(() => {
+      if (chartSemana) chartSemana.resize();
+    }).observe(wrapChartSemanaEl);
+  }
+
+  $('clearEquipoFilter').addEventListener('click', () => { selectedEquipo = null; render(); });
+  $('clearTipoFilter').addEventListener('click', () => { selectedTipo = null; render(); });
+  $('clearClaseFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
+  $('clearClaseChartFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
+  $('clearSemanaFilter').addEventListener('click', () => { $('filterSemana').value = ''; render(); });
+
+  function parseHoras(v){
+    if (typeof v === 'number') return v;
+    if (!v) return 0;
+    const n = parseFloat(String(v).replace(',', '.'));
+    return isNaN(n) ? 0 : n;
+  }
+
+  function getISOWeek(date){
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }
+
+  function parseFecha(v){
+    if (v instanceof Date && !isNaN(v)) return v;
+    if (typeof v === 'number' && XLSX.SSF) {
+      const d = XLSX.SSF.parse_date_code(v);
+      if (d) return new Date(d.y, d.m - 1, d.d);
+    }
+    if (typeof v === 'string' && v.trim() !== '') {
+      const d = new Date(v);
+      if (!isNaN(d)) return d;
+    }
+    return null;
+  }
+
+  // ==========================================
+  // DATOS INCRUSTADOS AUTOMÁTICAMENTE (EJEMPLO)
+  // ==========================================
+  const datosIncrustados = [
+    { "Descripción Centro": "EPC - VIA LACTEA", "Equipo": "VDD-84", "Clase": "VOLQUETA DOBLE TROQUE", "Horas_Producción": 0, "Horas_Disponibles": 0, "Horas_Varado": 28, "fecha": "2026-09-15", "Semana": "W38", "notas": "EQUIPO VARADO POR FALLA ELÉCTRICA, CON PÉRDIDA DE POTENCIA Y FRENADO." },
+    { "Descripción Centro": "EPC - VIA LACTEA", "Equipo": "VDD-75", "Clase": "VOLQUETA DOBLE TROQUE", "Horas_Producción": 0, "Horas_Disponibles": 0, "Horas_Varado": 28, "fecha": "2026-09-16", "Semana": "W38", "notas": "FALLA ELÉCTRICA, PÉRDIDA DE POTENCIA Y FRENOS INOPERATIVOS FUERA DE SERVICIO HASTA REVISIÓN." },
+    { "Descripción Centro": "EPC - VIA LACTEA", "Equipo": "CAM-01", "Clase": "CAMIONETA", "Horas_Producción": 40, "Horas_Disponibles": 30, "Horas_Varado": 0, "fecha": "2026-09-14", "Semana": "W38", "notas": "" },
+    { "Descripción Centro": "EPC - VIA LACTEA", "Equipo": "EXC-02", "Clase": "EXCAVADORA DE ORUGAS", "Horas_Producción": 60, "Horas_Disponibles": 40, "Horas_Varado": 0, "fecha": "2026-09-14", "Semana": "W38", "notas": "" },
+    { "Descripción Centro": "EPC - VIA LACTEA", "Equipo": "MOT-01", "Clase": "MOTONIVELADORA", "Horas_Producción": 50, "Horas_Disponibles": 45, "Horas_Varado": 0, "fecha": "2026-09-10", "Semana": "W37", "notas": "" },
+    { "Descripción Centro": "EPC - VIA LACTEA", "Equipo": "RET-01", "Clase": "RETROEXCAVADORA", "Horas_Producción": 35, "Horas_Disponibles": 55, "Horas_Varado": 0, "fecha": "2026-09-08", "Semana": "W36", "notas": "" }
+  ];
+
+  function processData(json){
+    const sample = json[0] || {};
+    const findKey = (t) => Object.keys(sample).find(k => normalizeStr(k) === normalizeStr(t)) || t;
+
+    const kCentro = findKey('Descripción Centro');
+    const kEquipo = findKey('Equipo');
+    const kClase = findKey('Clase');
+    const kDesTipo = findKey('des_tipo');
+    const kHoras = findKey('horas');
+    const kFecha = findKey('fecha');
+    const kNotas = findKey('notas');
+    const kSemana = findKey('Semana');
+
+    const kHorasDisp = findKey('Horas_Disponibles');
+    const kHorasProd = findKey('Horas_Producción');
+    const kHorasVarado = findKey('Horas_Varado');
+
+    const kSubgrupo = Object.keys(sample).find(k => normalizeStr(k).includes('subgrupo')) || 'Subgrupo';
+
+    const rows = [];
+    json.forEach(r => {
+      if (r[kCentro] && normalizeStr(r[kCentro]) !== normalizeStr(CENTRO_FIJO)) return;
+      const fecha = parseFecha(r[kFecha]);
+      const equipo = String(r[kEquipo] ?? '').trim();
+      if (!equipo) return;
+
+      const mesKey = fecha ? `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}` : '2026-09';
+      const mesLabel = fecha ? `${MESES[fecha.getMonth()]} ${String(fecha.getFullYear()).slice(-2)}` : 'Septiembre 26';
+      mesLabels[mesKey] = mesLabel;
+
+      const semanaCruda = kSemana ? r[kSemana] : undefined;
+      let semana, semanaOrder;
+      if (semanaCruda !== undefined && String(semanaCruda).trim() !== '') {
+        semana = String(semanaCruda).trim();
+        const digitos = semana.match(/\d+/);
+        semanaOrder = fecha ? (fecha.getFullYear() * 100 + getISOWeek(fecha)) : (digitos ? parseInt(digitos[0], 10) : 38);
+      } else if (fecha) {
+        const isoWeek = getISOWeek(fecha);
+        semana = `Sem ${isoWeek}`;
+        semanaOrder = fecha.getFullYear() * 100 + isoWeek;
+      } else {
+        semana = 'W38';
+        semanaOrder = 202638;
+      }
+
+      const valDisp = parseHoras(r[kHorasDisp]);
+      const valProd = parseHoras(r[kHorasProd]);
+      const valVarado = parseHoras(r[kHorasVarado]);
+
+      const clase = String(r[kClase] ?? 'Sin Clase').trim() || 'Sin Clase';
+      const grupo = clase;
+      const subgrupo = String(r[kSubgrupo] ?? 'Sin Subgrupo').trim() || 'Sin Subgrupo';
+
+      if (valDisp > 0 || valProd > 0 || valVarado > 0) {
+        if (valProd > 0) rows.push({ equipo, clase, grupo, subgrupo, desTipo: 'Producción', horas: valProd, mesKey, mesLabel, semana, semanaOrder, notas: '' });
+        if (valDisp > 0) rows.push({ equipo, clase, grupo, subgrupo, desTipo: 'Disponible', horas: valDisp, mesKey, mesLabel, semana, semanaOrder, notas: '' });
+        if (valVarado > 0) rows.push({ equipo, clase, grupo, subgrupo, desTipo: 'Varado', horas: valVarado, mesKey, mesLabel, semana, semanaOrder, notas: String(r[kNotas] ?? '').trim() });
+      } else {
+        rows.push({
+          equipo, clase, grupo, subgrupo,
+          desTipo: String(r[kDesTipo] ?? 'Disponible').trim(),
+          horas: parseHoras(r[kHoras]),
+          mesKey, mesLabel, semana, semanaOrder,
+          notas: String(r[kNotas] ?? '').trim()
+        });
+      }
+    });
+
+    TOTAL_FLOTA = new Set(rows.map(r => r.equipo)).size;
+    RAW = agruparYCalcularHoras(rows);
+    initFilters();
+    render();
+  }
+
+  function agruparYCalcularHoras(rows){
+    return rows.map(r => {
+      let tipoNorm = normalizeStr(r.desTipo);
+      let tipoFinal = 'Disponible';
+      if (tipoNorm.includes('prod')) tipoFinal = 'Producción';
+      else if (tipoNorm.includes('varad')) tipoFinal = 'Varado';
+      else if (tipoNorm.includes('disp')) tipoFinal = 'Disponible';
+      return { ...r, desTipo: tipoFinal };
+    });
+  }
+
+  function initFilters(){
+    const grupos = [...new Set(RAW.map(r => r.grupo))].sort();
+    const selGrupo = $('filterGrupo');
+    selGrupo.innerHTML = '<option value="">Todos los Grupos</option>' + grupos.map(g => `<option value="${g}">${g}</option>`).join('');
+    selGrupo.onchange = () => { selectedEquipo = null; selectedTipo = null; selectedClaseTabla = null; render(); };
+
+    const meses = [...new Set(RAW.map(r => r.mesKey))].sort();
+    const selMes = $('filterMes');
+    selMes.innerHTML = '<option value="">Todos los meses</option>' + meses.map(m => `<option value="${m}">${mesLabels[m] || m}</option>`).join('');
+    selMes.onchange = () => { selectedEquipo = null; selectedTipo = null; selectedClaseTabla = null; render(); };
+
+    const semanaOrderMap = {};
+    RAW.forEach(r => { semanaOrderMap[r.semana] = r.semanaOrder; });
+    const semanas = Object.keys(semanaOrderMap).sort((a, b) => semanaOrderMap[a] - semanaOrderMap[b]);
+    const selSemana = $('filterSemana');
+    selSemana.innerHTML = '<option value="">Todas las semanas</option>' + semanas.map(s => `<option value="${s}">${s}</option>`).join('');
+    selSemana.onchange = () => { selectedEquipo = null; selectedTipo = null; selectedClaseTabla = null; render(); };
+  }
+
+  function getFiltered(excludeSemana){
+    const g = $('filterGrupo').value;
+    const m = $('filterMes').value;
+    const s = $('filterSemana').value;
+    return RAW.filter(r => {
+      const matchGrupo = !g || r.grupo === g;
+      const matchMes = !m || r.mesKey === m;
+      const matchSemana = excludeSemana || !s || r.semana === s;
+      const matchEquipo = !selectedEquipo || r.equipo === selectedEquipo;
+      const matchTipo = !selectedTipo || r.desTipo === selectedTipo;
+      const matchClaseTabla = !selectedClaseTabla || (!selectedClaseTabla.clase || r.clase === selectedClaseTabla.clase);
+      return matchGrupo && matchMes && matchSemana && matchEquipo && matchTipo && matchClaseTabla;
+    });
+  }
+
+  function fitTable(wrapId, tableId, startFont, minFontIn, startPad, minPadIn){
+    const wrap = $(wrapId);
+    const table = $(tableId);
+    if (!wrap || !table) return;
+
+    let fontSize = startFont || 11, pad = startPad != null ? startPad : 4, lineHeight = 1.25;
+    const minFont = minFontIn || 4.5, minPad = minPadIn != null ? minPadIn : 0, minLineHeight = 1;
+
+    const apply = () => {
+      table.style.fontSize = fontSize + 'px';
+      table.style.lineHeight = lineHeight;
+      table.querySelectorAll('th,td').forEach(el => { el.style.padding = pad + 'px'; el.style.lineHeight = lineHeight; });
+    };
+
+    apply();
+    let guard = 0;
+    while (table.scrollHeight > wrap.clientHeight && (fontSize > minFont || pad > minPad || lineHeight > minLineHeight) && guard < 140) {
+      if (lineHeight > minLineHeight) lineHeight = +(lineHeight - 0.05).toFixed(2);
+      else if (pad > minPad) pad = +(pad - 0.25).toFixed(2);
+      else fontSize = +(fontSize - 0.25).toFixed(2);
+      apply();
+      guard++;
+    }
+    wrap.style.overflowY = (table.scrollHeight > wrap.clientHeight) ? 'auto' : 'hidden';
+  }
+
+  function render(){
+    const data = getFiltered();
+    const sum = (pred) => data.filter(pred).reduce((a, r) => a + r.horas, 0);
+    const horasProd = sum(r => r.desTipo === 'Producción');
+    const horasDisp = sum(r => r.desTipo === 'Disponible');
+    const horasVarado = sum(r => r.desTipo === 'Varado');
+
+    const horasTotales = horasDisp + horasProd + horasVarado;
+    const pctDisponibilidad = horasTotales > 0 ? ((horasTotales - horasVarado) / horasTotales) * 100 : 0;
+    const pctDisponibilidadObra = horasTotales > 0 ? (horasDisp / horasTotales) * 100 : 0;
+    const horasDispMecanica = horasProd + horasDisp;
+    const pctUtilizacion = horasDispMecanica > 0 ? (horasProd / horasDispMecanica) * 100 : 0;
+
+    const equiposUnicos = new Set(data.map(r => r.equipo)).size;
+    const equiposVaradosSet = new Set(data.filter(r => r.desTipo === 'Varado').map(r => r.equipo));
+
+    const varadoMap = {};
+    data.filter(r => r.desTipo === 'Varado').forEach(r => varadoMap[r.clase] = (varadoMap[r.clase] || 0) + r.horas);
+    const topVarado = Object.entries(varadoMap).sort((a,b) => b[1]-a[1])[0];
+
+    $('kpiEquipos').textContent = equiposUnicos;
+    $('kpiDisp').textContent = pctDisponibilidad.toFixed(1) + '%';
+    const isOptimo = pctDisponibilidad >= 70;
+    $('kpiDispBadge').textContent = isOptimo ? 'ÓPTIMO' : 'CRÍTICO';
+    $('kpiDispBadge').className = `badge border ${isOptimo ? 'bg-green/10 text-green border-green/30' : 'bg-red/10 text-red border-red/30'}`;
+
+    $('kpiDispObra').textContent = pctDisponibilidadObra.toFixed(1) + '\%';$('kpiTotalHoras').textContent = Math.round(horasTotales).toLocaleString();
+    const nombreClaseVarado = topVarado ? topVarado[0] : 'Ninguna';
+    $('kpiClaseVarado').textContent = nombreClaseVarado;
+    $('kpiClaseVaradoHrs').textContent = topVarado ? `${Math.round(topVarado[1])} h varadas` : '0 h varadas';
+
+    $('kpiHorasProd').textContent = Math.round(horasProd).toLocaleString();$('kpiPctProd').textContent = (horasTotales ? (horasProd/horasTotales*100) : 0).toFixed(1) + '%';
+
+    $('kpiHorasDisp').textContent = Math.round(horasDisp).toLocaleString();$('kpiPctDisp').textContent = (horasTotales ? (horasDisp/horasTotales*100) : 0).toFixed(1) + '%';
+
+    $('kpiHorasVarado').textContent = Math.round(horasVarado).toLocaleString();$('kpiPctVarado').textContent = (horasTotales ? (horasVarado/horasTotales*100) : 0).toFixed(1) + '%';
+
+    $('kpiEquiposVarados').textContent = equiposVaradosSet.size;
+    const pctVaradosCount = equiposUnicos ? (equiposVaradosSet.size / equiposUnicos * 100) : 0;
+    $('kpiEquiposVaradosSub').textContent = `${equiposVaradosSet.size} de ${equiposUnicos} (${pctVaradosCount.toFixed(1)}%)`;
+    $('kpiUtilGlobal').textContent = pctUtilizacion.toFixed(1) + '%';
+
+    const dataTodasSemanas = getFiltered(true);
+
+    renderDonut(horasProd, horasDisp, horasVarado, horasTotales);
+    renderTblClase(data);
+    renderChartResumen(data);
+    renderTblVarados(data, horasVarado);
+    renderChartSemana(dataTodasSemanas);
+    renderDesviaciones(dataTodasSemanas);
+
+    const semanaBadge = $('semanaFilterBadge');
+    const semanaSeleccionada = $('filterSemana').value;
+    if (semanaSeleccionada) {
+      $('semanaFilterName').textContent = semanaSeleccionada;
+      semanaBadge.classList.remove('hidden'); semanaBadge.classList.add('flex');
+    } else {
+      semanaBadge.classList.add('hidden'); semanaBadge.classList.remove('flex');
+    }
+
+    const badge = $('equipoFilterBadge');
+    if (selectedEquipo) {
+      $('equipoFilterName').textContent = selectedEquipo;
+      badge.classList.remove('hidden'); badge.classList.add('flex');
+    } else {
+      badge.classList.add('hidden'); badge.classList.remove('flex');
+    }
+
+    const tipoBadge = $('tipoFilterBadge');
+    if (selectedTipo) {
+      $('tipoFilterName').textContent = selectedTipo;
+      tipoBadge.classList.remove('hidden'); tipoBadge.classList.add('flex');
+    } else {
+      tipoBadge.classList.add('hidden'); tipoBadge.classList.remove('flex');
+    }
+
+    const claseChartBadge = $('claseChartFilterBadge');
+    if (selectedClaseTabla && selectedClaseTabla.clase) {
+      $('claseChartFilterName').textContent = selectedClaseTabla.clase;
+      claseChartBadge.classList.remove('hidden'); claseChartBadge.classList.add('flex');
+    } else {
+      claseChartBadge.classList.add('hidden'); claseChartBadge.classList.remove('flex');
+    }
+
+    const btnClase = $('clearClaseFilter');
+    if (selectedClaseTabla) btnClase.classList.remove('hidden'); else btnClase.classList.add('hidden');
+
+    requestAnimationFrame(() => {
+      fitTable('wrapVarados', 'tblVaradosTable', 11.5, 5, 4, 0);
+      fitTable('wrapDesviacion', 'tblDesviacionTable', 10.5, 6.5, 3, 0.5);
+    });
+  }
+
+  function renderDonut(prod, disp, varado, total){
+    if (chartDonut) chartDonut.destroy();
+    const ctx = $('chartDonut').getContext('2d');
+    chartDonut = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Producción', 'Disponible', 'Varado'],
+        datasets: [{
+          data: [prod, disp, varado],
+          backgroundColor: [COLORS.prod, COLORS.disp, COLORS.varado],
+          borderWidth: 2, borderColor: '#FFFFFF',
+          offset: ['Producción', 'Disponible', 'Varado'].map(l => l === selectedTipo ? 14 : 0)
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '65%',
+        onClick: (evt, elements, chart) => {
+          if (!elements.length) return;
+          const clickedTipo = chart.data.labels[elements[0].index];
+          selectedTipo = (selectedTipo === clickedTipo) ? null : clickedTipo;
+          render();
+        },
+        onHover: (evt, elements, chart) => { chart.canvas.style.cursor = elements.length ? 'pointer' : 'default'; },
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              boxWidth: 9, padding: 6, font: { size: 10, weight: '600' }, color: '#0F172A',
+              generateLabels: (chart) => {
+                const ds = chart.data.datasets[0];
+                const totalVal = ds.data.reduce((a, b) => a + b, 0);
+                return chart.data.labels.map((label, i) => {
+                  const value = ds.data[i];
+                  const pct = totalVal > 0 ? ((value / totalVal) * 100).toFixed(1) : '0.0';
+                  return { text: `${label}: ${Math.round(value)}h (${pct}%)`, fillStyle: ds.backgroundColor[i], strokeStyle: ds.backgroundColor[i], index: i };
+                });
+              }
+            }
+          },
+          datalabels: {
+            color: '#0F172A', font: { size: 10, weight: 'bold' }, clamp: true,
+            formatter: (value) => {
+              if (!value || total === 0) return '';
+              const pct = ((value / total) * 100).toFixed(1);
+              return `${Math.round(value)}h\n(${pct}%)`;
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function claseResumenMap(data){
+    const map = {};
+    data.forEach(r => {
+      if (!map[r.clase]) map[r.clase] = { prod: 0, disp: 0, varado: 0 };
+      if (r.desTipo === 'Producción') map[r.clase].prod += r.horas;
+      else if (r.desTipo === 'Disponible') map[r.clase].disp += r.horas;
+      else if (r.desTipo === 'Varado') map[r.clase].varado += r.horas;
+    });
+    return map;
+  }
+
+  function claseCountMap(data){
+    const map = {};
+    data.forEach(r => {
+      if (!map[r.clase]) map[r.clase] = new Set();
+      map[r.clase].add(r.equipo);
+    });
+    return map;
+  }
+
+  function renderTblClase(data){
+    const map = claseCountMap(data);
+    const tbody = $('tblClase');
+    const totalEquipos = new Set(data.map(r => r.equipo)).size;
+
+    const filas = Object.entries(map)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([clase, equipos]) => {
+        const isSelected = selectedClaseTabla && selectedClaseTabla.clase === clase;
+        const bgClass = isSelected ? 'bg-cyan/20 font-bold text-cyan' : 'hover:bg-panel2/60';
+        return `<tr class="cursor-pointer transition-colors ${bgClass} border-b border-border" data-clase="${clase}">
+          <td class="p-1.5 text-ink">${clase}</td>
+          <td class="p-1.5 text-right mono text-sub">${equipos.size}</td>
+        </tr>`;
+      }).join('');
+
+    tbody.innerHTML = filas;
+    $('tblClaseTotal').textContent = totalEquipos;
+
+    tbody.querySelectorAll('tr').forEach(tr => {
+      tr.addEventListener('click', () => {
+        const c = tr.getAttribute('data-clase');
+        const isSame = selectedClaseTabla && selectedClaseTabla.clase === c;
+        selectedClaseTabla = isSame ? null : { clase: c };
+        render();
+      });
+    });
+  }
+
+  function renderChartResumen(data){
+    const map = claseResumenMap(data);
+    let entries = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+    entries = entries.filter(([, v]) => (v.prod + v.varado + v.disp) > 0);
+
+    const labels = entries.map(([k]) => k);
+    const pctTrabajado = entries.map(([, v]) => {
+      const hTotales = v.disp + v.prod + v.varado;
+      return hTotales > 0 ? +((v.prod / hTotales) * 100).toFixed(1) : 0;
+    });
+    const pctVarado = entries.map(([, v]) => {
+      const hTotales = v.disp + v.prod + v.varado;
+      return hTotales > 0 ? +((v.varado / hTotales) * 100).toFixed(1) : 0;
+    });
+    const pctDisponible = entries.map(([, v]) => {
+      const hTotales = v.disp + v.prod + v.varado;
+      return hTotales > 0 ? +((v.disp / hTotales) * 100).toFixed(1) : 0;
+    });
+
+    const totRaw = entries.reduce((acc, [, v]) => {
+      acc.prod += v.prod; acc.disp += v.disp; acc.varado += v.varado; return acc;
+    }, { prod: 0, disp: 0, varado: 0 });
+    const totH = totRaw.prod + totRaw.disp + totRaw.varado;
+
+    labels.push('TOTALES');
+    pctTrabajado.push(totH > 0 ? +((totRaw.prod / totH) * 100).toFixed(1) : 0);
+    pctVarado.push(totH > 0 ? +((totRaw.varado / totH) * 100).toFixed(1) : 0);
+    pctDisponible.push(totH > 0 ? +((totRaw.disp / totH) * 100).toFixed(1) : 0);
+
+    if (chartResumen) chartResumen.destroy();
+    const canvas = $('chartResumen');
+    const wrap = $('wrapChartResumen');
+
+    const alturaPorFila = 34;
+    const alturaMinima = wrap.clientHeight || 260;
+    const alturaNecesaria = Math.max(alturaMinima, labels.length * alturaPorFila + 40);
+    canvas.style.height = alturaNecesaria + 'px';
+    wrap.style.overflowY = alturaNecesaria > alturaMinima ? 'auto' : 'hidden';
+
+    const ctx = canvas.getContext('2d');
+    const COLOR_TRABAJADO = '#1E3A8A', COLOR_VARADO = '#38BDF8', COLOR_DISPONIBLE = '#94A3B8';
+
+    const datalabelComun = (colorTexto) => ({
+      display: (ctxD) => ctxD.dataset.data[ctxD.dataIndex] >= 5,
+      color: colorTexto, anchor: 'center', align: 'center',
+      font: { size: 10, weight: '700' },
+      formatter: (value) => value > 0 ? value.toFixed(0) + '%' : ''
+    });
+
+    chartResumen = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: '% Trabajado', data: pctTrabajado, backgroundColor: COLOR_TRABAJADO, stack: 'total', datalabels: datalabelComun('#FFFFFF') },
+          { label: '% Varado', data: pctVarado, backgroundColor: COLOR_VARADO, stack: 'total', datalabels: datalabelComun('#0F172A') },
+          { label: '% Disponible', data: pctDisponible, backgroundColor: COLOR_DISPONIBLE, stack: 'total', datalabels: datalabelComun('#FFFFFF') }
+        ]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 4, bottom: 2, left: 2, right: 12 } },
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 10 }, color: '#475569' } },
+          tooltip: { callbacks: { label: (ctxT) => `${ctxT.dataset.label}: ${ctxT.parsed.x}%` } }
+        },
+        scales: {
+          x: { stacked: true, min: 0, max: 100, ticks: { font: { size: 9 }, color: '#64748B', callback: (v) => v + '%' }, grid: { color: '#E2E8F0' } },
+          y: {
+            stacked: true,
+            ticks: { font: { size: 9, weight: '700' }, color: (ctxY) => labels[ctxY.index] === 'TOTALES' ? '#0F172A' : '#334155', autoSkip: false },
+            title: { display: true, text: 'GRUPO DE EQUIPOS', font: { size: 10, weight: '700' }, color: '#64748B' },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function semanaMap(data){
+    const map = {};
+    data.forEach(r => {
+      if (!map[r.semana]) map[r.semana] = { order: r.semanaOrder, prod: 0, disp: 0, varado: 0 };
+      if (r.desTipo === 'Producción') map[r.semana].prod += r.horas;
+      else if (r.desTipo === 'Disponible') map[r.semana].disp += r.horas;
+      else if (r.desTipo === 'Varado') map[r.semana].varado += r.horas;
+    });
+    return map;
+  }
+
+  function renderChartSemana(data){
+    const map = semanaMap(data);
+    const entries = Object.entries(map).sort((a, b) => a[1].order - b[1].order);
+    const labels = entries.map(([k]) => k);
+    const semanaActiva = $('filterSemana').value;
+
+    const pctUtilSemana = entries.map(([, v]) => {
+      const hTotales = v.disp + v.prod;
+      return hTotales > 0 ? +((v.prod / hTotales) * 100).toFixed(1) : 0;
+    });
+    const pctDispSemana = entries.map(([, v]) => {
+      const hTotales = v.disp + v.prod;
+      return hTotales > 0 ? +(((hTotales - v.varado) / hTotales) * 100).toFixed(1) : 0;
+    });
+
+    if (chartSemana) chartSemana.destroy();
+    const ctx = $('chartSemana').getContext('2d');
+
+    const pillLabel = (color, align, distancia) => ({
+      display: true, align, anchor: align, offset: distancia, clamp: true,
+      backgroundColor: color + '22', borderRadius: 8, padding: { top: 3, bottom: 3, left: 6, right: 6 },
+      color: color, font: { size: 10, weight: '700' },
+      formatter: (value) => value > 0 ? Math.round(value) + '%' : ''
+    });
+
+    chartSemana = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: '% Utilización', data: pctUtilSemana, borderColor: COLORS.prod, backgroundColor: COLORS.prod, tension: 0.45, borderWidth: 3, pointRadius: (ctxP) => labels[ctxP.dataIndex] === semanaActiva ? 7 : 3, pointBackgroundColor: COLORS.prod, pointHoverRadius: 6, fill: false, datalabels: pillLabel(COLORS.prod, 'bottom', 10) },
+          { label: '% Disponibilidad', data: pctDispSemana, borderColor: COLORS.disp, backgroundColor: COLORS.disp, tension: 0.45, borderWidth: 3, pointRadius: (ctxP) => labels[ctxP.dataIndex] === semanaActiva ? 7 : 3, pointBackgroundColor: COLORS.disp, pointHoverRadius: 6, fill: false, datalabels: pillLabel(COLORS.disp, 'top', 10) }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 26, bottom: 4, left: 8, right: 8 } },
+        interaction: { mode: 'index', intersect: false },
+        onClick: (evt, elements, chart) => {
+          if (!elements.length) return;
+          const clickedSemana = chart.data.labels[elements[0].index];
+          const sel = $('filterSemana');
+          sel.value = (sel.value === clickedSemana) ? '' : clickedSemana;
+          render();
+        },
+        onHover: (evt, elements, chart) => { chart.canvas.style.cursor = elements.length ? 'pointer' : 'default'; },
+        plugins: {
+          legend: { position: 'bottom', align: 'center', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 7, padding: 14, font: { size: 10 }, color: '#475569' } },
+          datalabels: { display: false }
+        },
+        scales: {
+          x: {
+            ticks: { font: { size: 9 }, color: '#94A3B8', callback: function(v){ const lbl = this.getLabelForValue(v); return lbl === semanaActiva ? '● ' + lbl : lbl; } },
+            grid: { display: false }, title: { display: true, text: 'Semana', font: { size: 9 }, color: '#94A3B8' }
+          },
+          y: {
+            min: -18, max: 118,
+            afterBuildTicks: (axis) => { axis.ticks = [0, 50, 100].map(v => ({ value: v })); },
+            ticks: { callback: (v) => v + '%', font: { size: 9 }, color: '#94A3B8' },
+            grid: { color: '#E2E8F0', borderDash: [3, 3] },
+            title: { display: true, text: '% Utilización y % Disponibilidad', font: { size: 9 }, color: '#94A3B8' }
+          }
+        }
+      }
+    });
+  }
+
+  function renderDesviaciones(data){
+    const map = semanaMap(data);
+    const entries = Object.entries(map).filter(([k]) => k !== 'Sin semana').sort((a, b) => a[1].order - b[1].order);
+
+    const calc = entries.map(([semana, v]) => {
+      const hTotales = v.disp + v.prod;
+      const pctDisp = hTotales > 0 ? ((hTotales - v.varado) / hTotales) * 100 : 0;
+      const pctUtil = hTotales > 0 ? (v.prod / hTotales) * 100 : 0;
+      return { semana, pctDisp, pctUtil };
+    });
+
+    const promDisp = calc.length ? calc.reduce((a, c) => a + c.pctDisp, 0) / calc.length : 0;
+    const promUtil = calc.length ? calc.reduce((a, c) => a + c.pctUtil, 0) / calc.length : 0;
+
+    $('promDispLabel').textContent = promDisp.toFixed(1) + '\%';$('promUtilLabel').textContent = promUtil.toFixed(1) + '%';
+
+    const semanaActiva = $('filterSemana').value;
+    const tbody = $('tblDesviacion');
+
+    const filas = calc
+      .map(c => ({ ...c, devDisp: c.pctDisp - promDisp }))
+      .sort((a, b) => Math.abs(b.devDisp) - Math.abs(a.devDisp))
+      .map(c => {
+        const esNegativo = c.devDisp < 0;
+        const colorDev = esNegativo ? 'text-red' : 'text-green';
+        const flecha = esNegativo ? '▼' : '▲';
+        const isSelected = semanaActiva === c.semana;
+        const rowClass = isSelected ? 'bg-cyan/10 font-semibold' : 'hover:bg-panel2/60';
+        return `<tr class="cursor-pointer transition-colors ${rowClass}" data-semana="${c.semana}">
+          <td class="p-1 text-ink mono">${c.semana}</td>
+          <td class="p-1 text-right mono text-sub">${c.pctDisp.toFixed(1)}%</td>
+          <td class="p-1 text-right mono font-semibold ${colorDev}">${flecha} ${Math.abs(c.devDisp).toFixed(1)} pts</td>
+        </tr>`;
+      }).join('');
+
+    tbody.innerHTML = filas || `<tr><td colspan="3" class="p-2 text-center text-sub">Sin datos suficientes</td></tr>`;
+
+    tbody.querySelectorAll('tr[data-semana]').forEach(tr => {
+      tr.addEventListener('click', () => {
+        const s = tr.getAttribute('data-semana');
+        const sel = $('filterSemana');
+        sel.value = (sel.value === s) ? '' : s;
+        render();
+      });
+    });
+  }
+
+  function renderTblVarados(data, totalVarado){
+    const map = {};
+    data.filter(r => r.desTipo === 'Varado').forEach(r => {
+      if (!map[r.equipo]) map[r.equipo] = { clase: r.clase, horas: 0, causa: r.notas || 'Sin causa registrada' };
+      map[r.equipo].horas += r.horas;
+    });
+
+    const tbody = $('tblVarados');
+    tbody.innerHTML = Object.entries(map).sort((a,b) => b[1].horas - a[1].horas).map(([eq, b]) => {
+      const pctImpacto = totalVarado > 0 ? (b.horas / totalVarado) * 100 : 0;
+      return `<tr class="hover:bg-panel2/60 cursor-pointer" data-equipo="${eq}">
+        <td class="p-1 font-semibold text-ink mono">${eq}</td>
+        <td class="p-1 text-sub">${b.clase}</td>
+        <td class="p-1 text-right mono text-orange font-medium">${Math.round(b.horas)}</td>
+        <td class="p-1 text-right mono text-red font-semibold relative">
+          <div class="absolute inset-y-0 left-0 bg-red/10" style="width:${Math.min(pctImpacto,100)}%"></div>
+          <span class="relative">${pctImpacto.toFixed(1)}%</span>
+        </td>
+        <td class="p-1 text-sub max-w-xs" title="${b.causa}">${b.causa}</td>
+      </tr>`;
+    }).join('');
+
+    tbody.querySelectorAll('tr').forEach(tr => {
+      tr.addEventListener('click', () => {
+        const eq = tr.getAttribute('data-equipo');
+        selectedEquipo = (selectedEquipo === eq) ? null : eq;
+        render();
+      });
+    });
+  }
+
+  // Inicializar cargando los datos automáticamente al abrir la página
+  window.addEventListener('DOMContentLoaded', () => {
+    processData(datosIncrustados);
   });
 
-  // Intentar cargar automáticamente usando la URL directa de GitHub Raw para evitar bloqueos de CORS
-  async function autoLoad() {
-    try {
-      // Intenta primero ruta relativa local
-      let res = await fetch('Analisis_pwq.xlsx');
-      if (!res.ok) throw new Error("No encontrado localmente");
-      processWorkbook(XLSX.read(await res.arrayBuffer(), { type: 'array', cellDates: true }));
-    } catch (err) {
-      // Si falla, intenta mediante carga manual o avisa amablemente
-      showError("Para garantizar una lectura fluida en GitHub Pages, haz clic arriba en <strong>'📁 O selecciona tu archivo manualmente'</strong> y elige tu archivo <code>Analisis_pwq.xlsx</code> desde tu equipo.");
-    }
-  }
-
-  window.addEventListener('DOMContentLoaded', autoLoad);
-
-  function processWorkbook(wb){
-    const sheetName = wb.SheetNames.find(s => s.toLowerCase().includes('digitac')) || wb.SheetNames[0];
-    const sheet = wb.Sheets[sheetName];
-    const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
-
-    if (!json || json.length === 0) {
-      showError(`La pestaña "${sheetName}" está vacía.`);
-      return;
-    }
-
-    RAW = json;
-    $('loaderScreen').classList.add('hidden');$('dashboard').classList.remove('hidden');
-    renderKpis();
-  }
-
-  function renderKpis(){
-    $('kpiEquipos').textContent = RAW.length;
-  }
 })();
 </script>
-</body>
-</html>
+
+</body></html>
