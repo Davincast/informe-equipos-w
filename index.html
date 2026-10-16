@@ -37,7 +37,7 @@
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center">
     <h1 class="text-2xl font-bold text-ink mb-2">Informe Ejecutivo de Equipos</h1>
-    <p id="loaderText" class="text-sub text-xs mb-6">Cargando automáticamente <strong>Analisis pwq.xlsx</strong>...</p>
+    <p id="loaderText" class="text-sub text-xs mb-6">Cargando automáticamente <strong>Analisis_pwq.xlsx</strong>...</p>
 
     <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/60 transition-all p-8 cursor-pointer">
       <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
@@ -133,12 +133,12 @@
     return String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 
-  // Carga automática del archivo Excel desde la misma carpeta
+  // Carga automática corregida con el nombre exacto de tu archivo con guion bajo
   window.addEventListener('DOMContentLoaded', () => {
-    const excelUrl = "./Analisis pwq.xlsx?v=" + new Date().getTime();
+    const excelUrl = "./Analisis_pwq.xlsx?v=" + new Date().getTime();
     fetch(excelUrl)
       .then(res => {
-        if (!res.ok) throw new Error("No se encontró el archivo Analisis pwq.xlsx en la raíz.");
+        if (!res.ok) throw new Error("No se encontró el archivo Analisis_pwq.xlsx en la raíz.");
         return res.arrayBuffer();
       })
       .then(buf => {
