@@ -155,7 +155,7 @@
 
   // Carga automática al iniciar la página
   window.addEventListener('DOMContentLoaded', () => {
-    const excelUrl = "Analisis_pwq.xlsx?v=" + new Date().getTime();
+    const excelUrl = "Analisis pwq.xlsx?v=" + new Date().getTime();
     fetch(excelUrl)
       .then(response => {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status} - No se encontró el archivo.`);
@@ -167,7 +167,7 @@
       })
       .catch(err => {
         console.warn("Carga automática falló:", err);
-        showLoadError(`Error: ${err.message}. Asegúrate de que 'Analisis_pwq.xlsx' esté en la misma carpeta.`);
+        showLoadError(`Error: ${err.message}. Asegúrate de que 'Analisis pwq.xlsx' esté en la misma carpeta.`);
       });
   });
 
