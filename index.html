@@ -37,11 +37,11 @@
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center">
     <h1 class="text-2xl font-bold text-ink mb-2">Informe Ejecutivo de Equipos</h1>
-    <p id="loaderText" class="text-sub text-xs mb-6">Cargando automáticamente <strong>Analisis_pwq.xlsx</strong> desde GitHub...</p>
+    <p id="loaderText" class="text-sub text-xs mb-6">Cargando automáticamente <strong>Analisis pwq.xlsx</strong>...</p>
 
     <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/65 transition-all p-8 cursor-pointer">
       <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
-      <div class="text-sm text-ink font-semibold">O haz clic aquí para seleccionar otro archivo manualmente</div>
+      <div class="text-sm text-ink font-semibold">O haz clic aquí para seleccionar el archivo manualmente</div>
       <div class="text-xs text-sub mt-1">.xlsx, .xls, .csv</div>
     </label>
 
@@ -145,7 +145,7 @@
     const el = $('loadError');
     el.textContent = msg;
     el.classList.remove('hidden');
-    $('loaderText').textContent = 'No se pudo procesar el contenido del archivo. Detalle:';
+    $('loaderText').textContent = 'No se pudo procesar el contenido del archivo de forma automática. Selecciona uno manualmente:';
   }
 
   function clearLoadError(){
@@ -153,8 +153,9 @@
     $('loadError').classList.add('hidden');
   }
 
+  // Carga automática corregida con el nombre exacto del archivo con espacios codificados o directos
   window.addEventListener('DOMContentLoaded', () => {
-    const excelUrl = "Analisis_pwq.xlsx?v=" + new Date().getTime();";
+    const excelUrl = "Analisis pwq.xlsx?v=" + new Date().getTime();
     fetch(excelUrl)
       .then(response => {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status} - No se encontró el archivo.`);
@@ -166,7 +167,7 @@
       })
       .catch(err => {
         console.warn("Carga automática falló:", err);
-        showLoadError(`Error: ${err.message}. Verifica que 'Analisis_pwq.xlsx' esté en la raíz del repositorio.`);
+        showLoadError(`Error: ${err.message}. Asegúrate de que 'Analisis pwq.xlsx' esté en la misma carpeta que index.html.`);
       });
   });
 
@@ -176,46 +177,14 @@
   dropZone.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
   fileInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) handleFile(f); });
 
- $('resetBtn').addEventListener('click', () => {
+  $('resetBtn').addEventListener('click', () => {
     $('dashboard').classList.add('hidden');
     $('loaderScreen').classList.remove('hidden');
     clearLoadError();
     fileInput.value = '';
     selectedEquipo = null; selectedTipo = null; selectedClaseTabla = null;
   });
-function procesarWorkbook(wb){
-      let sheet = null;
-      let json = [];
 
-      // Intenta buscar una hoja que contenga datos válidos en todo el libro
-      for (const sheetName of wb.SheetNames) {
-          const s = wb.Sheets[sheetName];
-          const tempJson = XLSX.utils.sheet_to_json(s, { defval: '', raw: true });
-          if (tempJson && tempJson.length > 0) {
-              // Verificamos que tenga al menos alguna columna clave como "Equipo" o "horas"
-              const sample = tempJson[0];
-              const keys = Object.keys(sample).map(k => normalizeStr(k));
-              if (keys.some(k => k.includes('equipo') || k.includes('hora') || k.includes('clase'))) {
-                  sheet = s;
-                  json = tempJson;
-                  break;
-              }
-          }
-      }
-
-      // Si no encontró por nombre clave, toma la primera pestaña que tenga cualquier fila
-      if (!json.length && wb.SheetNames.length > 0) {
-          sheet = wb.Sheets[wb.SheetNames[0]];
-          json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
-      }
-
-      if (!json || json.length === 0) {
-          showLoadError('El archivo Excel cargado desde GitHub está vacío o no tiene el formato esperado.');
-          return;
-      }
-
-      processData(json);
-  }
   window.addEventListener('resize', () => {
     if (!$('dashboard').classList.contains('hidden')) render();
   });
@@ -241,17 +210,33 @@ function procesarWorkbook(wb){
   }
 
   function procesarWorkbook(wb){
-    // Busca la pestaña "Digitacion" o toma la primera disponible de forma automática
-    const targetSheetName = wb.SheetNames.find(s => normalizeStr(s).includes('digitacion')) || wb.SheetNames[0];
-    const sheet = wb.Sheets[targetSheetName];
+    let sheet = null;
+    let json = [];
 
-    if (!sheet) {
-      showLoadError('El archivo Excel no contiene hojas válidas.');
+    for (const sheetName of wb.SheetNames) {
+      const s = wb.Sheets[sheetName];
+      const tempJson = XLSX.utils.sheet_to_json(s, { defval: '', raw: true });
+      if (tempJson && tempJson.length > 0) {
+        const sample = tempJson[0];
+        const keys = Object.keys(sample).map(k => normalizeStr(k));
+        if (keys.some(k => k.includes('equipo') || k.includes('hora') || k.includes('clase'))) {
+          sheet = s;
+          json = tempJson;
+          break;
+        }
+      }
+    }
+
+    if (!json.length && wb.SheetNames.length > 0) {
+      sheet = wb.Sheets[wb.SheetNames[0]];
+      json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+    }
+
+    if (!json || json.length === 0) {
+      showLoadError('El archivo Excel está vacío o no tiene el formato esperado.');
       return;
     }
 
-    // Lee los datos de la hoja completa sin exigir formato estricto de tablas de Excel
-    const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
     processData(json);
   }
 
@@ -309,7 +294,6 @@ function procesarWorkbook(wb){
 
     const rows = [];
     json.forEach(r => {
-      // Si el centro no coincide exactamente, permite continuar si la columna está vacía para evitar bloqueos
       if (r[kCentro] && String(r[kCentro]).trim() !== '' && normalizeStr(r[kCentro]) !== normalizeStr(CENTRO_FIJO)) return;
       
       const fecha = parseFecha(r[kFecha]);
