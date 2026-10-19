@@ -37,12 +37,12 @@
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center">
     <h1 class="text-2xl font-bold text-ink mb-2">Informe Ejecutivo de Equipos</h1>
-    <p id="loaderText" class="text-sub text-xs mb-6">Cargando automáticamente <strong>Analisis pwq.xlsx</strong>...</p>
+    <p id="loaderText" class="text-sub text-xs mb-6">Selecciona tu archivo <strong>Analisis pwq.xlsx</strong> (13.5 MB) una sola vez. Se recordará automáticamente para el futuro.</p>
 
-    <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/65 transition-all p-8 cursor-pointer">
+    <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/65 transition-all p-8 cursor-pointer shadow-sm">
       <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
-      <div class="text-sm text-ink font-semibold">O haz clic aquí para seleccionar el archivo manualmente</div>
-      <div class="text-xs text-sub mt-1">.xlsx, .xls, .csv</div>
+      <div class="text-sm text-ink font-semibold">📁 Haz clic aquí para seleccionar el archivo Excel</div>
+      <div class="text-xs text-sub mt-1">.xlsx, .xls, .csv (Se guardará en tu navegador)</div>
     </label>
 
     <div id="loadError" class="hidden mt-3 text-xs text-red bg-red/10 border border-red/30 rounded p-2 text-left font-mono"></div>
@@ -122,7 +122,7 @@
   </section>
 </div>
 
-<!-- SCRIPT DE PROCESAMIENTO ROBUSTO Y MULTI-HOJA -->
+<!-- SCRIPT CON MEMORIA LOCAL (LOCALSTORAGE) -->
 <script>
 (function(){
   const CENTRO_FIJO = "EPC - VIA LACTEA";
@@ -145,30 +145,29 @@
     const el = $('loadError');
     el.textContent = msg;
     el.classList.remove('hidden');
-    $('loaderText').textContent = 'No se pudo leer automáticamente. Selecciona el archivo manualmente:';
   }
 
   function clearLoadError(){
-    $('loadError').textContent = '';
-    $('loadError'].classList.add('hidden');
+    $('loadError').textContent = '';$('loadError').classList.add('hidden');
   }
 
-  // Carga automática por fetch con rastreo en todas las hojas del libro Excel
+  // Al iniciar, verifica si ya hay un archivo guardado en la memoria local del navegador
   window.addEventListener('DOMContentLoaded', () => {
-    const excelUrl = "./Analisis pwq.xlsx?v=" + new Date().getTime();
-    fetch(excelUrl)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.arrayBuffer();
-      })
-      .then(buffer => {
-        const wb = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: true });
-        procesarWorkbookFlexible(wb);
-      })
-      .catch(err => {
-        console.warn("Carga automática falló:", err);
-        showLoadError(`Error: ${err.message}. Selecciona el archivo manualmente.`);
-      });
+    const savedData = localStorage.getItem('excel_data_cache');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed && parsed.length > 0) {
+          RAW = parsed;
+          initFilters();
+          $('loaderScreen').classList.add('hidden');$('dashboard').classList.remove('hidden');
+          render();
+          return;
+        }
+      } catch(e) {
+        localStorage.removeItem('excel_data_cache');
+      }
+    }
   });
 
   const dropZone = $('dropZone');
@@ -178,8 +177,8 @@
   fileInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) handleFile(f); });
 
   $('resetBtn').addEventListener('click', () => {
-    $('dashboard').classList.add('hidden');
-    $('loaderScreen').classList.remove('hidden');
+    localStorage.removeItem('excel_data_cache');
+    $('dashboard').classList.add('hidden');$('loaderScreen').classList.remove('hidden');
     clearLoadError();
     fileInput.value = '';
     selectedEquipo = null; selectedTipo = null; selectedClaseTabla = null;
@@ -189,14 +188,13 @@
     if (!$('dashboard').classList.contains('hidden')) render();
   });
 
-  $('clearEquipoFilter').addEventListener('click', () => { selectedEquipo = null; render(); });
-  $('clearTipoFilter').addEventListener('click', () => { selectedTipo = null; render(); });
-  $('clearClaseFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
-  $('clearClaseChartFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
-  $('clearSemanaFilter').addEventListener('click', () => { $('filterSemana').value = ''; render(); });
+  $('clearEquipoFilter').addEventListener('click', () => { selectedEquipo = null; render(); });$('clearTipoFilter').addEventListener('click', () => { selectedTipo = null; render(); });
+  $('clearClaseFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });$('clearClaseChartFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
+  $('clearSemanaFilter').addEventListener('click', () => {$('filterSemana').value = ''; render(); });
 
   function handleFile(file){
     clearLoadError();
+    $('loaderText').innerHTML = `Procesando <strong>${file.name}</strong> (13.5 MB)... por favor espere un momento.`;
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -209,15 +207,12 @@
     reader.readAsArrayBuffer(file);
   }
 
-  // Busca en CUALQUIER hoja del Excel la que tenga filas con datos reales
   function procesarWorkbookFlexible(wb){
     let json = [];
-
     for (const sheetName of wb.SheetNames) {
       const sheet = wb.Sheets[sheetName];
       const tempJson = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
       if (tempJson && tempJson.length > 0) {
-        // Validamos que tenga al menos una fila con contenido útil
         json = tempJson;
         break;
       }
@@ -285,7 +280,6 @@
 
     const rows = [];
     json.forEach(r => {
-      // Si el centro no coincide exactamente, permite continuar si la columna está vacía para evitar bloqueos
       if (r[kCentro] && String(r[kCentro]).trim() !== '' && normalizeStr(r[kCentro]) !== normalizeStr(CENTRO_FIJO)) return;
       
       const fecha = parseFecha(r[kFecha]);
@@ -346,6 +340,13 @@
       else if (tipoNorm.includes('disp')) tipoFinal = 'Disponible';
       return { ...r, desTipo: tipoFinal };
     });
+
+    // Guardar en la memoria local del navegador para futuras visitas instantáneas
+    try {
+      localStorage.setItem('excel_data_cache', JSON.stringify(RAW));
+    } catch(e) {
+      console.warn("No se pudo almacenar en localStorage debido al límite de tamaño.");
+    }
 
     initFilters();
     $('loaderScreen').classList.add('hidden');$('dashboard').classList.remove('hidden');
@@ -438,15 +439,19 @@
     $('kpiDispBadge').textContent = isOptimo ? 'ÓPTIMO' : 'CRÍTICO';
     $('kpiDispBadge').className = `badge border ${isOptimo ? 'bg-green/10 text-green border-green/30' : 'bg-red/10 text-red border-red/30'}`;
 
-    $('kpiDispObra').textContent = pctDisponibilidadObra.toFixed(1) + '\%';$('kpiTotalHoras').textContent = Math.round(horasTotales).toLocaleString();
+    $('kpiDispObra').textContent = pctDisponibilidadObra.toFixed(1) + '%';
+    $('kpiTotalHoras').textContent = Math.round(horasTotales).toLocaleString();
     const nombreClaseVarado = topVarado ? topVarado[0] : 'Ninguna';
     $('kpiClaseVarado').textContent = nombreClaseVarado;
     $('kpiClaseVarado').title = nombreClaseVarado;
     $('kpiClaseVaradoHrs').textContent = topVarado ? `${Math.round(topVarado[1])} h varadas` : '0 h varadas';
 
-    $('kpiHorasProd').textContent = Math.round(horasProd).toLocaleString();$('kpiPctProd').textContent = (horasTotales ? (horasProd/horasTotales*100) : 0).toFixed(1) + '%';
-    $('kpiHorasDisp').textContent = Math.round(horasDisp).toLocaleString();$('kpiPctDisp').textContent = (horasTotales ? (horasDisp/horasTotales*100) : 0).toFixed(1) + '%';
-    $('kpiHorasVarado').textContent = Math.round(horasVarado).toLocaleString();$('kpiPctVarado').textContent = (horasTotales ? (horasVarado/horasTotales*100) : 0).toFixed(1) + '%';
+    $('kpiHorasProd').textContent = Math.round(horasProd).toLocaleString();
+    $('kpiPctProd').textContent = (horasTotales ? (horasProd/horasTotales*100) : 0).toFixed(1) + '%';
+    $('kpiHorasDisp').textContent = Math.round(horasDisp).toLocaleString();
+    $('kpiPctDisp').textContent = (horasTotales ? (horasDisp/horasTotales*100) : 0).toFixed(1) + '%';
+    $('kpiHorasVarado').textContent = Math.round(horasVarado).toLocaleString();
+    $('kpiPctVarado').textContent = (horasTotales ? (horasVarado/horasTotales*100) : 0).toFixed(1) + '%';
 
     $('kpiEquiposVarados').textContent = equiposVaradosSet.size;
     const pctVaradosCount = equiposUnicos ? (equiposVaradosSet.size / equiposUnicos * 100) : 0;
@@ -804,7 +809,8 @@
     const promDisp = calc.length ? calc.reduce((a, c) => a + c.pctDisp, 0) / calc.length : 0;
     const promUtil = calc.length ? calc.reduce((a, c) => a + c.pctUtil, 0) / calc.length : 0;
 
-    $('promDispLabel').textContent = promDisp.toFixed(1) + '\%';$('promUtilLabel').textContent = promUtil.toFixed(1) + '%';
+    $('promDispLabel').textContent = promDisp.toFixed(1) + '%';
+    $('promUtilLabel').textContent = promUtil.toFixed(1) + '%';
 
     const semanaActiva = $('filterSemana').value;
     const tbody = $('tblDesviacion');
