@@ -295,20 +295,23 @@
   window.addEventListener('DOMContentLoaded', () => {
     const fileName = "Analisis pwq.xlsx";
     
-    fetch(fileName)
-      .then(response => {
-        if (!response.ok) throw new Error("No se pudo cargar automáticamente.");
+   fetch('Analisis pwq.xlsx')
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         return response.arrayBuffer();
-      })
-      .then(buffer => {
+    })
+    .then(buffer => {
         const data = new Uint8Array(buffer);
         const workbook = XLSX.read(data, { type: 'array' });
         processWorkbookData(workbook);
-      })
-      .catch(error => {
-        console.log("Carga automática omitida por restricciones del navegador (CORS). Se requiere selección manual.", error);
-      });
-  });
+        console.log("¡Archivo cargado automáticamente con éxito!");
+    })
+    .catch(error => {
+        console.error("Error al cargar automáticamente el archivo Excel:", error);
+        // Si falla la carga automática, la función de respaldo manual sigue activa abajo
+    });
 
   function processFile(file) {
     const reader = new FileReader();
