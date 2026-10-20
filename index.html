@@ -602,5 +602,53 @@
     }).join('');
   }
 </script>
+  <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Dashboard</title>
+    <!-- Tus estilos CSS -->
+</head>
+<body>
+
+    <!-- Tu contenido HTML (loader, dashboard, etc.) -->
+    <div id="loaderScreen">Cargando...</div>
+    <div id="dashboard" class="hidden">...</div>
+
+    <!-- AQUÍ ESTÁN TUS LIBRERÍAS (ej. SheetJS) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- 👇 PEGA EL CÓDIGO AQUÍ DENTRO DE LAS ETIQUETAS SCRIPT 👇 -->
+    <script>
+      // Carga automática al iniciar la página
+      window.addEventListener('DOMContentLoaded', () => {
+        const fileName = "Analisis pwq.xlsx";
+        
+        fetch(fileName)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error("No se pudo cargar el archivo automáticamente.");
+            }
+            return response.arrayBuffer();
+          })
+          .then(buffer => {
+            const data = new Uint8Array(buffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // ⚠️ REEMPLAZA 'procesarDatosExcel' por el nombre de la función 
+            // que ya usas en tu código para leer el archivo Excel.
+            procesarDatosExcel(workbook); 
+            
+            // Oculta el loader y muestra el dashboard
+            const loader = document.getElementById('loaderScreen');
+            const dashboard = document.getElementById('dashboard');
+            if (loader) loader.classList.add('hidden');
+            if (dashboard) dashboard.classList.remove('hidden');
+          })
+          .catch(error => {
+            console.log("Modo manual activo (CORS o archivo no local):", error);
+          });
+      });
+    </script>
 </body>
 </html>
