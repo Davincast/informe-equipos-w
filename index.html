@@ -291,44 +291,65 @@
     fileInput.value = '';
   });
 
+  // Intento de carga automática al iniciar (Compatible con servidores locales/GitHub Pages con soporte)
+  window.addEventListener('DOMContentLoaded', () => {
+    const fileName = "Analisis pwq.xlsx";
+    
+    fetch(fileName)
+      .then(response => {
+        if (!response.ok) throw new Error("No se pudo cargar automáticamente.");
+        return response.arrayBuffer();
+      })
+      .then(buffer => {
+        const data = new Uint8Array(buffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        processWorkbookData(workbook);
+      })
+      .catch(error => {
+        console.log("Carga automática omitida por restricciones del navegador (CORS). Se requiere selección manual.", error);
+      });
+  });
+
   function processFile(file) {
     const reader = new FileReader();
     reader.onload = function(e) {
       try {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-        
-        // Buscar pestaña "Digitacion" o primera disponible
-        let sheetName = workbook.SheetNames.find(s => s.toLowerCase().includes('digitacion')) || workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        
-        // Convertir a JSON
-        const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-        
-        if (!json || json.length === 0) {
-          showError("El archivo no contiene datos legibles.");
-          return;
-        }
-
-        // Normalizar filas
-        rawData = parseRows(json);
-        
-        if (!rawData.length) {
-          showError("No se encontraron registros válidos en la hoja Digitacion.");
-          return;
-        }
-
-        // Inicializar Filtros y Mostrar Dashboard
-        initDashboard();
-        loaderScreen.classList.add('hidden');
-        dashboard.classList.remove('hidden');
-        loadError.classList.add('hidden');
-
+        processWorkbookData(workbook);
       } catch (err) {
         showError("Error al procesar el archivo Excel: " + err.message);
       }
     };
     reader.readAsArrayBuffer(file);
+  }
+
+  function processWorkbookData(workbook) {
+    // Buscar pestaña "Digitacion" o primera disponible
+    let sheetName = workbook.SheetNames.find(s => s.toLowerCase().includes('digitacion')) || workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convertir a JSON
+    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    
+    if (!json || json.length === 0) {
+      showError("El archivo no contiene datos legibles.");
+      return;
+    }
+
+    // Normalizar filas
+    rawData = parseRows(json);
+    
+    if (!rawData.length) {
+      showError("No se encontraron registros válidos en la hoja Digitacion.");
+      return;
+    }
+
+    // Inicializar Filtros y Mostrar Dashboard
+    initDashboard();
+    loaderScreen.classList.add('hidden');
+    dashboard.classList.remove('hidden');
+    loadError.classList.add('hidden');
   }
 
   function showError(msg) {
@@ -338,7 +359,6 @@
 
   function parseRows(json) {
     return json.map(r => {
-      // Mapear nombres flexibles de columnas
       const equipo = r['EQUIPO'] || r['Equipo'] || r['CODIGO'] || 'S/N';
       const clase = r['CLASE'] || r['Clase'] || r['GRUPO'] || 'VARIOS';
       const centro = r['CENTRO'] || r['Centro'] || r['PROYECTO'] || 'GENERAL';
@@ -393,11 +413,9 @@
   function render() {
     const data = getFilteredData();
 
-    // Actualizar badge del centro
     const selCentro = document.getElementById('filterCentro').value;
     document.getElementById('centroBadge').textContent = selCentro === 'ALL' ? 'TODOS LOS CENTROS' : selCentro;
 
-    // Totales de horas
     const totalProd = data.reduce((a, b) => a + b.hProd, 0);
     const totalVar = data.reduce((a, b) => a + b.hVar, 0);
     const totalDisp = data.reduce((a, b) => a + b.hDisp, 0);
@@ -405,7 +423,6 @@
 
     const eqUnicos = new Set(data.map(d => d.equipo)).size;
 
-    // Cálculo KPIs
     const dispMec = totalHoras > 0 ? ((totalProd + totalDisp) / totalHoras) * 100 : 0;
     const dispObra = totalHoras > 0 ? (totalProd / totalHoras) * 100 : 0;
     const util = (totalProd + totalDisp) > 0 ? (totalProd / (totalProd + totalDisp)) * 100 : 0;
@@ -513,7 +530,6 @@
     const data = getFilteredData();
     const q = document.getElementById('compQ').value.toLowerCase();
     
-    // Agrupar por equipo
     const map = {};
     data.forEach(d => {
       if (!map[d.equipo]) map[d.equipo] = { equipo: d.equipo, clase: d.clase, centro: d.centro, p: 0, v: 0, d: 0 };
@@ -586,7 +602,6 @@
       }
     });
 
-    // Tabla Desviaciones
     const avgDisp = dispData.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / (dispData.length || 1);
     const tbody = document.getElementById('tblDesviacion');
     tbody.innerHTML = labels.map((s, idx) => {
@@ -602,53 +617,5 @@
     }).join('');
   }
 </script>
-  <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Mi Dashboard</title>
-    <!-- Tus estilos CSS -->
-</head>
-<body>
-
-    <!-- Tu contenido HTML (loader, dashboard, etc.) -->
-    <div id="loaderScreen">Cargando...</div>
-    <div id="dashboard" class="hidden">...</div>
-
-    <!-- AQUÍ ESTÁN TUS LIBRERÍAS (ej. SheetJS) -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-    <!-- 👇 PEGA EL CÓDIGO AQUÍ DENTRO DE LAS ETIQUETAS SCRIPT 👇 -->
-    <script>
-      // Carga automática al iniciar la página
-      window.addEventListener('DOMContentLoaded', () => {
-        const fileName = "Analisis pwq.xlsx";
-        
-        fetch(fileName)
-          .then(response => {
-            if (!response.ok) {
-              throw new Error("No se pudo cargar el archivo automáticamente.");
-            }
-            return response.arrayBuffer();
-          })
-          .then(buffer => {
-            const data = new Uint8Array(buffer);
-            const workbook = XLSX.read(data, { type: 'array' });
-            
-            // ⚠️ REEMPLAZA 'procesarDatosExcel' por el nombre de la función 
-            // que ya usas en tu código para leer el archivo Excel.
-            procesarDatosExcel(workbook); 
-            
-            // Oculta el loader y muestra el dashboard
-            const loader = document.getElementById('loaderScreen');
-            const dashboard = document.getElementById('dashboard');
-            if (loader) loader.classList.add('hidden');
-            if (dashboard) dashboard.classList.remove('hidden');
-          })
-          .catch(error => {
-            console.log("Modo manual activo (CORS o archivo no local):", error);
-          });
-      });
-    </script>
 </body>
 </html>
