@@ -116,14 +116,12 @@
       })
       .catch(error => {
         console.error("Error al cargar el archivo:", error);
-        alert("Error cargando el análisis automáticamente: " + error.message);
       });
   });
 
   function initDashboard(rows){
     if(!rows || !rows.length) return;
 
-    // Poblar filtros únicos
     const centros = [...new Set(rows.map(r => r.Centro || r['Centro'] || '').filter(Boolean))].sort();
     const grupos = [...new Set(rows.map(r => r.Clase || r['Clase'] || '').filter(Boolean))].sort();
     const meses = [...new Set(rows.map(r => r.mes || r['Mes2'] || '').filter(Boolean))].sort();
@@ -132,7 +130,6 @@
     fillSelect('filterGrupo', grupos);
     fillSelect('filterMes', meses);
 
-    // Calcular KPIs iniciales globales
     updateKPIs(rows);
   }
 
