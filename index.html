@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html lang="es">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Informe Ejecutivo · Disponibilidad de Equipos</title>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -99,6 +101,7 @@
 (function(){
   const $=id=>document.getElementById(id);
   let globalRows = [];
+  let donutChart = null;
 
   document.addEventListener("DOMContentLoaded", function() {
     fetch("Analisis pwq.xlsx")
@@ -108,6 +111,7 @@
       })
       .then(buffer => {
         const wb = XLSX.read(new Uint8Array(buffer), {type:'array'});
+        // Buscar la hoja correcta 'Digitacion'
         const sheetName = wb.SheetNames.find(s => s.toLowerCase().includes('digitacion')) || wb.SheetNames[0];
         const ws = wb.Sheets[sheetName];
         const data = XLSX.utils.sheet_to_json(ws, {defval:''});
@@ -116,21 +120,28 @@
       })
       .catch(error => {
         console.error("Error al cargar el archivo:", error);
+        alert("Error al cargar 'Analisis pwq.xlsx'. Asegúrate de que el archivo esté en la misma carpeta y ábrelo desde un servidor local (Live Server).");
       });
   });
 
   function initDashboard(rows){
     if(!rows || !rows.length) return;
 
-    const centros = [...new Set(rows.map(r => r.Centro || r['Centro'] || '').filter(Boolean))].sort();
-    const grupos = [...new Set(rows.map(r => r.Clase || r['Clase'] || '').filter(Boolean))].sort();
-    const meses = [...new Set(rows.map(r => r.mes || r['Mes2'] || '').filter(Boolean))].sort();
+    const centros = [...new Set(rows.map(r => r.Centro || r['Descripción Centro'] || '').filter(Boolean))].sort();
+    const grupos = [...new Set(rows.map(r => r.Clase || '').filter(Boolean))].sort();
+    const meses = [...new Set(rows.map(r => r.Mes2 || r.mes || '').filter(Boolean))].sort();
+    const semanas = [...new Set(rows.map(r => r.Semana || '').filter(Boolean))].sort();
 
     fillSelect('filterCentro', centros);
     fillSelect('filterGrupo', grupos);
     fillSelect('filterMes', meses);
+    fillSelect('filterSemana', semanas);
 
-    updateKPIs(rows);
+    ['filterCentro', 'filterGrupo', 'filterMes', 'filterSemana'].forEach(id => {
+      $(id).addEventListener('change', filterAndRender);
+    });
+
+    render(rows);
   }
 
   function fillSelect(id, items){
@@ -143,18 +154,105 @@
     });
   }
 
-  function updateKPIs(rows){
-    const totalEquipos = new Set(rows.map(r => r.Equipo)).size;
-    const prod = rows.reduce((acc, r) => acc + Number(r.Horas_Producción || r.horas || 0), 0);
+  function filterAndRender(){
+    const centro = $('filterCentro').value;
+    const grupo = $('filterGrupo').value;
+    const mes = $('filterMes').value;
+    const semana = $('filterSemana').value;
+
+    const filtered = globalRows.filter(r => {
+      const matchCentro = !centro || (r.Centro == centro || r['Descripción Centro'] == centro);
+      const matchGrupo = !grupo || r.Clase == grupo;
+      const matchMes = !mes || (r.Mes2 == mes || r.mes == mes);
+      const matchSemana = !semana || r.Semana == semana;
+      return matchCentro && matchGrupo && matchMes && matchSemana;
+    });
+
+    render(filtered);
+  }
+
+  function render(rows){
+    // KPIs
+    const totalEquipos = new Set(rows.map(r => r.Equipo).filter(Boolean)).size;
+    const prod = rows.reduce((acc, r) => acc + Number(r.Horas_Producción || 0), 0);
     const varado = rows.reduce((acc, r) => acc + Number(r.Horas_Varado || 0), 0);
     const disp = rows.reduce((acc, r) => acc + Number(r.Horas_Disponibles || 0), 0);
+    const posibles = rows.reduce((acc, r) => acc + Number(r.Hrs Posibles || 0), 0);
 
-    $('kpiEquipos').textContent = totalEquipos;
+    $('kpiEquipos').textContent = totalEquipos.toLocaleString();
     $('kpiHorasProd').textContent = prod.toLocaleString('es-CO', {maximumFractionDigits:0});
     $('kpiHorasVarado').textContent = varado.toLocaleString('es-CO', {maximumFractionDigits:0});
     $('kpiHorasDisp').textContent = disp.toLocaleString('es-CO', {maximumFractionDigits:0});
-    $('kpiUtil').textContent = (disp > 0 ? ((prod / disp) * 100).toFixed(1) : 0) + '%';
+    
+    const util = disp > 0 ? ((prod / disp) * 100).toFixed(1) : 0;
+    $('kpiUtil').textContent = util + '%';
+
+    // % Disp Mecánica y Obra
+    const dispMec = posibles > 0 ? (((posibles - varado) / posibles) * 100).toFixed(1) : 0;
+    $('kpiDisp').textContent = dispMec + '%';
+
+    const dispObra = posibles > 0 ? ((disp / posibles) * 100).toFixed(1) : 0;
+    $('kpiObra').textContent = dispObra + '%';
+
+    // Tabla por Grupo / Clase
+    const claseMap = {};
+    rows.forEach(r => {
+      const c = r.Clase || 'SIN CLASE';
+      if(!claseMap[c]) claseMap[c] = new Set();
+      if(r.Equipo) claseMap[c].add(r.Equipo);
+    });
+
+    const tblClase = $('tblClase');
+    tblClase.innerHTML = '';
+    Object.keys(claseMap).sort().forEach(clase => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-border hover:bg-panel2';
+      tr.innerHTML = `<td class="p-1 font-medium">${clase}</td><td class="p-1 text-right mono">${claseMap[clase].size}</td>`;
+      tblClase.appendChild(tr);
+    });
+
+    // Tabla de Equipos Varados
+    const tblVarados = $('tblVarados');
+    tblVarados.innerHTML = '';
+    const varadosRows = rows.filter(r => Number(r.Horas_Varado || 0) > 0);
+    varadosRows.sort((a,b) => Number(b.Horas_Varado) - Number(a.Horas_Varado));
+
+    varadosRows.slice(0, 50).forEach(r => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-border hover:bg-panel2';
+      tr.innerHTML = `
+        <td class="p-1 font-medium mono">${r.Equipo || ''}</td>
+        <td class="p-1">${r.Clase || ''}</td>
+        <td class="p-1 text-right mono text-orange font-semibold">${Number(r.Horas_Varado).toLocaleString()}</td>
+        <td class="p-1 text-sub">${r.notas || r.descripcion_detalle || 'Sin causa descrita'}</td>
+      `;
+      tblVarados.appendChild(tr);
+    });
+
+    // Donut Chart
+    const ctx = $('chartDonut').getContext('2d');
+    if(donutChart) donutChart.destroy();
+    
+    donutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Producción', 'Varado', 'Disponibles'],
+        datasets: [{
+          data: [prod, varado, disp],
+          backgroundColor: ['#0891B2', '#EA580C', '#059669'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+        }
+      }
+    });
   }
 })();
 </script>
-</body></html>
+</body>
+</html>
