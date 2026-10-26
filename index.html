@@ -44,11 +44,11 @@
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center">
     <h1 class="text-2xl font-bold text-ink mb-2">Informe Ejecutivo de Equipos</h1>
-    <p class="text-sub text-xs mb-6">Carga el archivo <strong>Analisis pwq.xlsx</strong> (Pestaña <strong>Digitacion</strong>, Tabla <strong>Digitacion_2</strong>) para generar el panel.</p>
+    <p class="text-sub text-xs mb-6">Cargando automáticamente <strong>Analisis pwq.xlsx</strong> desde el repositorio...</p>
 
     <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/60 transition-all p-8 cursor-pointer">
       <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
-      <div class="text-sm text-ink font-semibold">Selecciona o arrastra "Analisis pwq.xlsx"</div>
+      <div class="text-sm text-ink font-semibold">O selecciona/arrastra el archivo manualmente</div>
       <div class="text-xs text-sub mt-1">.xlsx, .xls, .csv</div>
     </label>
 
@@ -291,13 +291,11 @@
     const h=m[hi].map(x=>String(x||'').trim());
     const findCol=keys=>h.findIndex(col=>keys.some(k=>nrm(col).includes(k)));
     
-    // Mapeo básico de columnas predeterminado
     const cEq=findCol(['equipo','tag','codigo']);
     const cCl=findCol(['clase','grupo','tipo']);
     const cCe=findCol(['centro','obra','proyecto']);
     const cFe=findCol(['fecha','date']);
     
-    // Generar estructura compatible
     RAW=m.slice(hi+1);
     prep({
       eq: [["EQUIPO 1","GENERAL"]],
@@ -312,21 +310,34 @@
     RAW=d;
     $('loaderScreen').classList.add('hidden');
     $('dashboard').classList.remove('hidden');
-    // Inicializar filtros vacíos por defecto
     render();
   }
 
   function render(){
-    // Renderizado básico del dashboard
-  }
-
-  // Si hay datos incrustados iniciales opcionales
-  const initData = document.getElementById('data');
-  if(initData && initData.textContent){
-    try {
-      prep(JSON.parse(initData.textContent));
-    } catch(e) {}
+    // Renderizado básico
   }
 })();
+</script>
+
+<!-- Script para descargar y cargar automáticamente Analisis pwq.xlsx desde GitHub Pages -->
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const excelFilePath = "Analisis pwq.xlsx"; 
+
+    fetch(excelFilePath)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("No se pudo encontrar el archivo Excel en el repositorio.");
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        const fakeFile = new File([blob], "Analisis pwq.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        handleFile(fakeFile);
+      })
+      .catch(error => {
+        console.warn("Carga automática no disponible:", error);
+      });
+  });
 </script>
 </body></html>
