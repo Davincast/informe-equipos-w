@@ -698,7 +698,7 @@
 })();
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    // 1. Nombre exacto de tu archivo en el repositorio de GitHub
+    // 1. El nombre exacto de tu archivo en el repositorio de GitHub
     const excelFilePath = "Analisis pwq.xlsx"; 
 
     // 2. Descargar el archivo automáticamente mediante fetch
@@ -707,33 +707,17 @@
         if (!response.ok) {
           throw new Error("No se pudo encontrar el archivo Excel en el repositorio.");
         }
-        return response.arrayBuffer();
+        return response.blob(); // Convertimos la respuesta en un objeto tipo Archivo (Blob)
       })
-      .then(buffer => {
-        const data = new Uint8Array(buffer);
-        const workbook = XLSX.read(data, { type: 'array' });
+      .then(blob => {
+        // Creamos un objeto simulado que 'handleFile' pueda leer exactamente igual que cuando lo subías a mano
+        const fakeFile = new File([blob], "Analisis pwq.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         
-        // 3. Validar que exista la pestaña "Digitacion"
-        if (!workbook.Sheets["Digitacion"]) {
-          throw new Error("La pestaña 'Digitacion' no existe en el archivo.");
-        }
-
-        const worksheet = workbook.Sheets["Digitacion"];
-        
-        // 4. LLAMA AQUÍ A TU FUNCIÓN PRINCIPAL DE PROCESAMIENTO
-        // (Sustituye 'nombreDeTuFuncionActual' por el nombre real de la función que procesa el Excel en tu código)
-        nombreDeTuFuncionActual(worksheet); 
-
-        // 5. Ocultar la pantalla de carga y mostrar el dashboard directamente
-        const loader = document.getElementById('loaderScreen');
-        const dashboard = document.getElementById('dashboard');
-        
-        if (loader) loader.style.display = 'none';
-        if (dashboard) dashboard.classList.remove('hidden'); // O dashboard.style.display = 'block';
+        // 3. Llamamos a tu función original handleFile
+        handleFile(fakeFile);
       })
       .catch(error => {
-        console.warn("Carga automática omitida o fallida:", error);
-        // Si hay algún problema, el cargador manual original seguirá visible por seguridad
+        console.warn("Carga automática no disponible:", error);
       });
   });
 </script>
