@@ -250,20 +250,25 @@
     if (dataScript) {
       try {
         const rawJson = JSON.parse(dataScript.textContent);
-        // Aquí se inyecta directamente el objeto de datos que ya viene incrustado
+        window.globalData = rawJson;
+        
+        // Si existe la función de inicialización principal en tu script, la ejecutamos
         if (typeof window.initDashboard === "function") {
           window.initDashboard(rawJson);
+        } else if (typeof procesarDatos === "function") {
+          procesarDatos(rawJson);
         } else {
-          // Si el script original procesaba por medio de funciones globales o eventos internos,
-          // disparar el procesamiento automático del objeto JSON incrustado:
-          window.globalData = rawJson;
-          // Forzar renderizado si la app principal lee de 'globalData' o 'data'
+          // Si las funciones están definidas localmente, disparamos un evento o recargamos los selects
+          console.log("Datos cargados correctamente. Verificando renderizado...");
+          // Forzar la actualización si la app lee de window.globalData
+          if (window.renderApp) window.renderApp();
         }
       } catch(e) {
         console.error("Error al parsear los datos embebidos:", e);
       }
     }
   });
+
 </script>
 </body>
 </html>
