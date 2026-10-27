@@ -246,36 +246,42 @@ window.addEventListener("DOMContentLoaded", async () => {
     
     console.log("¡Datos cargados con éxito! Registros:", jsonDataRaw.length);
 
-    // Convertimos los objetos JSON a formato matricial (filas y columnas)
-    const headers = Object.keys(jsonDataRaw[0]);
-    const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
-    const jsonData = [headers, ...rows];
-
-    // Ocultamos el loader y mostramos el dashboard
+    // Ocultamos la pantalla de carga y mostramos el dashboard
     document.getElementById("loaderScreen")?.classList.add("hidden");
     document.getElementById("dashboard")?.classList.remove("hidden");
 
-    // Inyectamos los datos directamente en la variable o función que usa tu tablero
-    // Si tu app tiene una función de procesamiento global, la llamamos:
-    if (typeof procesarDatosExcel === "function") {
-      procesarDatosExcel(jsonData);
-    } else if (typeof cargarDatos === "function") {
-      cargarDatos(jsonData);
+    // Inyectamos los 8116 registros en las variables globales más comunes de estos tableros
+    window.allData = jsonDataRaw;
+    window.rawData = jsonDataRaw;
+    window.datosGlobales = jsonDataRaw;
+
+    // Si tu plantilla usa funciones internas de renderizado o filtros, las disparamos:
+    if (typeof actualizarDashboard === "function") {
+      actualizarDashboard(jsonDataRaw);
+    } else if (typeof render === "function") {
+      render(jsonDataRaw);
+    } else if (typeof filtrarDatos === "function") {
+      filtrarDatos();
     } else {
-      // Simulamos que el archivo Excel fue cargado inyectándolo en la lógica existente de tu app
-      window.loadedData = jsonData;
-      
-      // Si existe una función global que renderiza o actualiza los selectores de centros, la disparamos
-      const centroSel = document.getElementById("filterCentro");
-      if (centroSel && typeof poblarFiltros === "function") {
-        poblarFiltros(jsonData);
-      } else {
-        // Disparamos un evento genérico de cambio para forzar el redibujado
-        console.log("Forzando renderizado visual del tablero...");
-        if (typeof actualizarTablero === "function") actualizarTablero();
-        else if (typeof actualizarKPIs === "function") actualizarKPIs();
+      // Forzamos la actualización simulando un cambio en el primer selector de centro
+      const centroSelect = document.getElementById("filterCentro");
+      if (centroSelect) {
+        // Disparamos eventos para que el tablero despierte y pinte las gráficas
+        centroSelect.value = "";
+        centroSelect.dispatchEvent(new Event('change', { bubbles: true }));
       }
+      // Si hay una función global genérica de inicio, la ejecutamos
+      Object.keys(window).forEach(key => {
+        if (key.toLowerCase().includes('init') || key.toLowerCase().includes('load') || key.toLowerCase().includes('procesar')) {
+          try {
+            if (typeof window[key] === 'function' && key !== 'addEventListener') {
+              window[key](jsonDataRaw);
+            }
+          } catch(e) {}
+        }
+      });
     }
+    console.log("Tablero sincronizado con datos automáticos.");
   } catch (err) {
     console.error("Error crítico en la carga automática:", err);
   }
