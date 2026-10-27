@@ -242,13 +242,21 @@
 document.addEventListener("DOMContentLoaded", () => {
   const loaderScreen = document.getElementById("loaderScreen");
   const dashboard = document.getElementById("dashboard");
-  const fileInput = document.getElementById("fileInput");
-  const dropZone = document.getElementById("dropZone");
   const loadError = document.getElementById("loadError");
 
-  function processWorkbookBuffer(arrayBuffer) {
-    try {
-      const data = new Uint8Array(arrayBuffer);
+  // URL directa de tu archivo en GitHub (reemplaza 'tu-usuario' y 'tu-repo' por los tuyos reales, 
+  // o usa la ruta relativa si GitHub Pages lo permite con archivos pequeños).
+  // Nota: Para archivos de 13.5MB en GitHub, lo ideal es usar la URL Raw de GitHub:
+  const excelUrl = "https://raw.githubusercontent.com/Davincast/informe-equipos-w/main/Analisis%20pwq.xlsx";
+
+  // Intentar descarga automática por red al abrir la página
+  fetch(excelUrl)
+    .then(response => {
+      if (!response.ok) throw new Error("No se pudo descargar el archivo desde el repositorio.");
+      return response.arrayBuffer();
+    })
+    .then(buffer => {
+      const data = new Uint8Array(buffer);
       const workbook = XLSX.read(data, { type: 'array' });
       
       const sheetName = workbook.SheetNames.includes("Digitacion") ? "Digitacion" : workbook.SheetNames[0];
@@ -256,61 +264,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
       
       if (!jsonData || jsonData.length === 0) {
-        throw new Error("El archivo Excel está vacío o la pestaña no tiene datos.");
+        throw new Error("El archivo está vacío.");
       }
 
-      // Ocultar loader y mostrar dashboard
+      // Ocultar pantalla de carga y mostrar el dashboard con los datos listos
       if (loaderScreen) loaderScreen.classList.add("hidden");
       if (dashboard) dashboard.classList.remove("hidden");
       
+      // Inicializar el tablero automáticamente
       initDashboard(jsonData);
-    } catch (error) {
-      console.error("Error al procesar:", error);
-      if (loadError) {
-        loadError.textContent = "Error al procesar el archivo Excel: " + error.message;
-        loadError.classList.remove("hidden");
-      }
-      // Si falla la carga automática, aseguramos que el dashboard sea visible para permitir la carga manual
-      if (loaderScreen) loaderScreen.classList.add("hidden");
-      if (dashboard) dashboard.classList.remove("hidden");
-    }
-  }
-
-  // 1. INTENTO DE CARGA AUTOMÁTICA
-  // Prueba con el nombre exacto. Asegúrate de que esté en la misma carpeta.
-  fetch("Analisis pwq.xlsx")
-    .then(response => {
-      if (!response.ok) throw new Error("No se encontró 'Analisis pwq.xlsx' en la ruta local.");
-      return response.arrayBuffer();
-    })
-    .then(buffer => {
-      processWorkbookBuffer(buffer);
     })
     .catch(err => {
-      console.warn("Carga automática bloqueada o archivo no encontrado. Por favor, selecciona el archivo manualmente con el botón de recarga (⟳).", err);
-      // Forzamos mostrar el dashboard para que el usuario pueda usar el botón de carga manual
+      console.error("Error en la carga automática:", err);
+      if (loadError) {
+        loadError.textContent = "Error al cargar los datos automáticamente: " + err.message + ". (Nota: Los navegadores pueden bloquear archivos muy pesados de 13.5MB por red directa).";
+        loadError.classList.remove("hidden");
+      }
+      // Ocultamos el loader para que al menos se vea la interfaz
       if (loaderScreen) loaderScreen.classList.add("hidden");
       if (dashboard) dashboard.classList.remove("hidden");
     });
-
-  // 2. SELECCIÓN MANUAL DESDE EL INPUT
-  if (fileInput) {
-    fileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (ev) => processWorkbookBuffer(ev.target.result);
-        reader.readAsArrayBuffer(file);
-      }
-    });
-  }
-
-  // 3. BOTÓN DE RECARGA / RESET (⟳)
-  const resetBtn = document.getElementById("resetBtn");
-  if (resetBtn && fileInput) {
-    resetBtn.addEventListener("click", () => {
-      fileInput.click();
-    });
-  }
 });
 </script>
