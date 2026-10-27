@@ -239,8 +239,6 @@
 
 <!-- INSERCIÓN DE DATOS AUTOMÁTICOS CON FECHA ACTUAL -->
 <script>
-  // Aquí se inyectan los datos y se autoselecciona la fecha/semana más reciente del sistema
-  // Función mejorada para lectura automática y manejo de errores sin pantalla en blanco
 document.addEventListener("DOMContentLoaded", () => {
   const loaderScreen = document.getElementById("loaderScreen");
   const dashboard = document.getElementById("dashboard");
@@ -248,51 +246,75 @@ document.addEventListener("DOMContentLoaded", () => {
   const dropZone = document.getElementById("dropZone");
   const loadError = document.getElementById("loadError");
 
-  // Intentar cargar automáticamente si el archivo está en la misma ruta (requiere entorno local compatible o Live Server)
+  // Función unificada para procesar cualquier archivo Excel (automático o manual)
+  function processWorkbookBuffer(arrayBuffer) {
+    try {
+      const data = new Uint8Array(arrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      
+      // Buscar la pestaña 'Digitacion' o usar la primera por defecto
+      const sheetName = workbook.SheetNames.includes("Digitacion") ? "Digitacion" : workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      
+      // Convertir a JSON manteniendo los parámetros originales
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      // Ocultar pantalla de carga y mostrar el dashboard
+      loaderScreen.classList.add("hidden");
+      dashboard.classList.remove("hidden");
+      
+      // Inicializar el tablero con los datos
+      initDashboard(jsonData);
+    } catch (error) {
+      loadError.textContent = "Error al procesar el archivo Excel: " + error.message;
+      loadError.classList.remove("hidden");
+    }
+  }
+
+  // 1. INTENTO DE CARGA AUTOMÁTICA (Busca "Analisis pwq.xlsx" en la misma carpeta)
   fetch("Analisis pwq.xlsx")
     .then(response => {
-      if (!response.ok) throw new Error("No se pudo cargar automáticamente el archivo en la ruta local.");
+      if (!response.ok) throw new Error("No se pudo cargar automáticamente el archivo.");
       return response.arrayBuffer();
     })
     .then(buffer => {
-      processExcelData(buffer);
+      processWorkbookBuffer(buffer);
     })
     .catch(err => {
-      console.on("Carga automática omitida o bloqueada por seguridad del navegador. Usa el selector manual.", err);
-      // Si falla la carga automática por restricciones del navegador, mantenemos el panel listo pero mostramos el selector sin romper el diseño
+      console.warn("Carga automática omitida o bloqueada por el navegador. Usa el selector manual.", err);
     });
 
-  // Manejador para la selección manual o DropZone que ya tenías, asegurando que procese la pestaña "Digitacion"
-  fileInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) readFile(file);
-  });
-
-  function readFile(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        
-        // Buscar la pestaña 'Digitacion' de forma exacta o usar la primera si hay variaciones
-        const sheetName = workbook.SheetNames.includes("Digitacion") ? "Digitacion" : workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        
-        // Convertir a JSON manteniendo los parámetros originales
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        
-        // Ocultar loader y mostrar dashboard con las medidas exactas
-        loaderScreen.classList.add("hidden");
-        dashboard.classList.remove("hidden");
-        
-        // Inicializar funciones del dashboard con los datos leídos
-        initDashboard(jsonData);
-      } catch (error) {
-        loadError.textContent = "Error al procesar el archivo Excel: " + error.message;
-        loadError.classList.remove("hidden");
+  // 2. SELECCIÓN MANUAL DESDE EL INPUT DE ARCHIVOS
+  if (fileInput) {
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => processWorkbookBuffer(ev.target.result);
+        reader.readAsArrayBuffer(file);
       }
-    };
-    reader.readAsArrayBuffer(file);
+    });
+  }
+
+  // 3. ZONA DE ARRASTRE (DROPZONE) SI APLICARÁ
+  if (dropZone) {
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("border-cyan");
+    });
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("border-cyan");
+    });
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("border-cyan");
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => processWorkbookBuffer(ev.target.result);
+        reader.readAsArrayBuffer(file);
+      }
+    });
   }
 });
+</script>
