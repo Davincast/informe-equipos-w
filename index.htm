@@ -236,30 +236,35 @@
   </section>
 
 </div>
-
-<script>
-<!-- CARGA AUTOMÁTICA DE DATOS DESDE EL ARCHIVO JSON OPTIMIZADO -->
+<!-- CARGA AUTOMÁTICA DE DATOS SEGURA -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const loaderScreen = document.getElementById("loaderScreen");
   const dashboard = document.getElementById("dashboard");
   const loadError = document.getElementById("loadError");
 
-  console.log("Iniciando carga automática de datos.json...");
+  console.log("Cargando datos.json...");
 
   fetch("datos.json")
     .then(response => {
-      if (!response.ok) throw new Error("No se pudo encontrar o cargar el archivo 'datos.json' (Código: " + response.status + ")");
-      return response.json();
+      // Verificamos que la respuesta sea exitosa
+      if (!response.ok) throw new Error("Error al conectar con datos.json (Status: " + response.status + ")");
+      return response.text(); // Leemos como texto primero para validar que no sea HTML
     })
-    .then(jsonDataRaw => {
-      console.log("¡Archivo datos.json descargado con éxito! Filas totales:", jsonDataRaw.length);
-      
-      if (!jsonDataRaw || jsonDataRaw.length === 0) {
-        throw new Error("El archivo datos.json está vacío.");
+    .then(textData => {
+      // Si el texto empieza con '<', significa que GitHub devolvió un error HTML en lugar del JSON
+      if (textData.trim().startsWith("<")) {
+        throw new Error("GitHub Pages está bloqueando o no encuentra el archivo JSON. Sube un archivo JSON más pequeño o verifica la ruta.");
       }
 
-      // Transformamos el JSON a la estructura matricial que espera tu tablero
+      const jsonDataRaw = JSON.parse(textData);
+      console.log("¡Datos cargados con éxito! Total de registros:", jsonDataRaw.length);
+
+      if (!jsonDataRaw || jsonDataRaw.length === 0) {
+        throw new Error("El archivo de datos está vacío.");
+      }
+
+      // Transformamos los datos al formato matricial
       const headers = Object.keys(jsonDataRaw[0]);
       const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
       const jsonData = [headers, ...rows];
@@ -267,24 +272,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (loaderScreen) loaderScreen.classList.add("hidden");
       if (dashboard) dashboard.classList.remove("hidden");
       
-      // Intentamos llamar a la función principal de tu tablero de forma segura
+      // Inicializamos el tablero
       if (typeof initDashboard === "function") {
         initDashboard(jsonData);
-      } else if (typeof processWorkbookBuffer === "function") {
-        // Por si tu script usa otra función de buffer
-        console.log("initDashboard no encontrada, buscando funciones alternativas...");
-      } else {
-        // Si las funciones están en otro script que aún no cargaba, buscamos variables globales o disparamos un evento
-        window.globalData = jsonData;
-        // Disparamos un evento personalizado por si tu app escucha la carga
-        const event = new CustomEvent('dataLoaded', { detail: jsonData });
-        document.dispatchEvent(event);
       }
-      
-      console.log("Proceso de carga automática finalizado.");
     })
     .catch(err => {
-      console.error("Error crítico en la carga:", err);
+      console.error("Error en la carga:", err);
       if (loadError) {
         loadError.textContent = "Error: " + err.message;
         loadError.classList.remove("hidden");
