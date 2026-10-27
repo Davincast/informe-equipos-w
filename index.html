@@ -248,26 +248,28 @@
   document.addEventListener("DOMContentLoaded", function() {
     const dataScript = document.getElementById("data");
     if (dataScript) {
-      try {
+    try {
         const rawJson = JSON.parse(dataScript.textContent);
         window.globalData = rawJson;
         
         // Si existe la función de inicialización principal en tu script, la ejecutamos
         if (typeof window.initDashboard === "function") {
-          window.initDashboard(rawJson);
+            window.initDashboard(rawJson);
         } else if (typeof procesarDatos === "function") {
-          procesarDatos(rawJson);
+            procesarDatos(rawJson);
         } else {
-          // Si las funciones están definidas localmente, disparamos un evento o recargamos los selects
-          console.log("Datos cargados correctamente. Verificando renderizado...");
-          // Forzar la actualización si la app lee de window.globalData
-          if (window.renderApp) window.renderApp();
+            // Si las funciones están definidas localmente, disparamos un evento o recargamos los selects
+            console.log("Datos cargados correctamente. Verificando renderizado...");
+            // Forzar la actualización si la app lee de window.globalData
+            if (window.renderApp) {
+                window.renderApp();
+            }
         }
-      } catch(e) {
+    } catch (e) {
         console.error("Error al parsear los datos embebidos:", e);
-      }
     }
-  });
+}
+  ;
 
 </script>
 </body>
