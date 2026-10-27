@@ -237,49 +237,31 @@
 
 </div>
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const loaderScreen = document.getElementById("loaderScreen");
-  const dashboard = document.getElementById("dashboard");
-  const loadError = document.getElementById("loadError");
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const response = await fetch("datos.json");
+    const textData = await response.text();
+    const jsonDataRaw = JSON.parse(textData);
+    
+    console.log("¡Datos cargados con éxito! Registros:", jsonDataRaw.length);
 
-  console.log("Iniciando carga de datos.json...");
+    const headers = Object.keys(jsonDataRaw[0]);
+    const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
+    const jsonData = [headers, ...rows];
 
-  fetch("datos.json")
-    .then(response => {
-      if (!response.ok) throw new Error("No se pudo cargar el archivo datos.json");
-      return response.text();
-    })
-    .then(textData => {
-      if (textData.trim().startsWith("<")) {
-        throw new Error("GitHub Pages devolvió un error HTML en lugar del JSON.");
-      }
-      const jsonDataRaw = JSON.parse(textData);
-      console.log("¡Datos cargados con éxito! Total de registros:", jsonDataRaw.length);
+    document.getElementById("loaderScreen")?.classList.add("hidden");
+    document.getElementById("dashboard")?.classList.remove("hidden");
 
-      const headers = Object.keys(jsonDataRaw[0]);
-      const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
-      const jsonData = [headers, ...rows];
-
-      if (loaderScreen) loaderScreen.classList.add("hidden");
-      if (dashboard) dashboard.classList.remove("hidden");
-
-      if (typeof initDashboard === "function") {
-        initDashboard(jsonData);
-      } else if (typeof procesarDatos === "function") {
-        procesarDatos(jsonData);
-      } else {
-        window.datosGlobales = jsonData;
-        console.log("Datos listos en window.datosGlobales");
-      }
-    })
-    .catch(err => {
-      console.error("Error en la carga:", err);
-      if (loadError) {
-        loadError.textContent = "Error: " + err.message;
-        loadError.classList.remove("hidden");
-      }
-      if (loaderScreen) loaderScreen.classList.add("hidden");
-      if (dashboard) dashboard.classList.remove("hidden");
-    });
+    if (typeof initDashboard === "function") {
+      initDashboard(jsonData);
+    } else if (typeof procesarDatos === "function") {
+      procesarDatos(jsonData);
+    } else {
+      window.datosGlobales = jsonData;
+      console.log("Tablero listo con datos globales");
+    }
+  } catch (err) {
+    console.error("Error al cargar los datos:", err);
+  }
 });
 </script>
