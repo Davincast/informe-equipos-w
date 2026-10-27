@@ -694,7 +694,36 @@
     wrap.querySelectorAll('[data-c]').forEach(el=>el.addEventListener('click',()=>{const c=el.dataset.c;selectedClaseTabla=selectedClaseTabla&&selectedClaseTabla.clase===c?null:{clase:c};render()}));
     document.querySelectorAll('#resLegend button').forEach(b=>{b.className='flex items-center gap-1 '+(b.dataset.s===resSort?'font-bold text-ink underline':'hover:text-ink')})}
   document.querySelectorAll('#resLegend button').forEach(b=>b.addEventListener('click',()=>{resSort=b.dataset.s;render()}));
-  prep(JSON.parse($('data').textContent));
+ // Carga automática del archivo Excel desde el mismo repositorio de GitHub
+  document.addEventListener("DOMContentLoaded", function() {
+    fetch("Analisis pwq.xlsx")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("No se pudo encontrar el archivo 'Analisis pwq.xlsx' (Código " + response.status + ")");
+        }
+        return response.arrayBuffer();
+      })
+      .then(buffer => {
+        const wb = XLSX.read(new Uint8Array(buffer), {type:'array'});
+        // Selecciona la hoja de digitalización o la primera disponible
+        const sheetName = wb.SheetNames.find(s => s.toLowerCase().includes('digitacion')) || wb.SheetNames[0];
+        const ws = wb.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(ws, {defval:''});
+        
+        // Inicializa tu función principal con los datos del Excel
+        if (typeof prep === 'function') {
+          prep(data);
+        } else {
+          // Si tu función principal se llama de otra forma, la ejecutas aquí
+          globalRows = data;
+          render();
+        }
+      })
+      .catch(error => {
+        console.error("Error al cargar el Excel:", error);
+        alert("Aviso: " + error.message + "\nVerifica que 'Analisis pwq.xlsx' esté en la misma carpeta que index.html en GitHub.");
+      });
+  });;
 })();
 </script>
 </body></html>
