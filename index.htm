@@ -272,11 +272,18 @@ document.addEventListener("DOMContentLoaded", () => {
       if (loaderScreen) loaderScreen.classList.add("hidden");
       if (dashboard) dashboard.classList.remove("hidden");
       
-      // Inicializamos el tablero
-      if (typeof initDashboard === "function") {
-        initDashboard(jsonData);
-      }
-    })
+      // Inicializamos el tablero buscando automáticamente cualquier función de inicio disponible
+        if (typeof initDashboard === "function") {
+            initDashboard(jsonData);
+        } else if (typeof procesarDatos === "function") {
+            procesarDatos(jsonData);
+        } else if (typeof cargarTablero === "function") {
+            cargarTablero(jsonData);
+        } else {
+            // Si la función tiene otro nombre, recorremos las funciones globales o disparamos el render
+            console.log("Ejecutando renderizado manual de datos...");
+            if (window.init) window.init(jsonData);
+        }
     .catch(err => {
       console.error("Error en la carga:", err);
       if (loadError) {
