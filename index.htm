@@ -238,49 +238,42 @@
 </div>
 
 <!-- INSERCIÓN DE DATOS AUTOMÁTICOS CON FECHA ACTUAL -->
+<!-- CARGA AUTOMÁTICA DE DATOS DESDE EL ARCHIVO JSON OPTIMIZADO -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const loaderScreen = document.getElementById("loaderScreen");
   const dashboard = document.getElementById("dashboard");
   const loadError = document.getElementById("loadError");
 
-  // URL directa de tu archivo en GitHub (reemplaza 'tu-usuario' y 'tu-repo' por los tuyos reales, 
-  // o usa la ruta relativa si GitHub Pages lo permite con archivos pequeños).
-  // Nota: Para archivos de 13.5MB en GitHub, lo ideal es usar la URL Raw de GitHub:
-  const excelUrl = "https://raw.githubusercontent.com/Davincast/informe-equipos-w/main/Analisis%20pwq.xlsx";
-
-  // Intentar descarga automática por red al abrir la página
-  fetch(excelUrl)
+  // Hacemos la petición automática al archivo JSON optimizado en tu repositorio
+  fetch("datos.json")
     .then(response => {
-      if (!response.ok) throw new Error("No se pudo descargar el archivo desde el repositorio.");
-      return response.arrayBuffer();
+      if (!response.ok) throw new Error("No se pudo cargar el archivo de datos.");
+      return response.json();
     })
-    .then(buffer => {
-      const data = new Uint8Array(buffer);
-      const workbook = XLSX.read(data, { type: 'array' });
-      
-      const sheetName = workbook.SheetNames.includes("Digitacion") ? "Digitacion" : workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      
-      if (!jsonData || jsonData.length === 0) {
-        throw new Error("El archivo está vacío.");
+    .then(jsonDataRaw => {
+      if (!jsonDataRaw || jsonDataRaw.length === 0) {
+        throw new Error("El archivo de datos está vacío.");
       }
 
-      // Ocultar pantalla de carga y mostrar el dashboard con los datos listos
+      // Transformamos el JSON de objetos a la estructura de filas matriciales que tu initDashboard necesita
+      const headers = Object.keys(jsonDataRaw[0]);
+      const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
+      const jsonData = [headers, ...rows];
+
+      // Ocultamos la pantalla de carga y mostramos el dashboard con todas las gráficas y KPIs
       if (loaderScreen) loaderScreen.classList.add("hidden");
       if (dashboard) dashboard.classList.remove("hidden");
       
-      // Inicializar el tablero automáticamente
+      // Inicializamos tu tablero con los datos listos de forma automática
       initDashboard(jsonData);
     })
     .catch(err => {
       console.error("Error en la carga automática:", err);
       if (loadError) {
-        loadError.textContent = "Error al cargar los datos automáticamente: " + err.message + ". (Nota: Los navegadores pueden bloquear archivos muy pesados de 13.5MB por red directa).";
+        loadError.textContent = "Error al cargar los datos: " + err.message;
         loadError.classList.remove("hidden");
       }
-      // Ocultamos el loader para que al menos se vea la interfaz
       if (loaderScreen) loaderScreen.classList.add("hidden");
       if (dashboard) dashboard.classList.remove("hidden");
     });
