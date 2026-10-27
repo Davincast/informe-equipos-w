@@ -692,13 +692,16 @@
     wrap.innerHTML=ent.map(e=>row(e.n,e.v)).join('')||'<div class="text-xs text-sub p-2">Sin datos</div>';
     $('resTotales').innerHTML=row('TOTALES',T,true);
     wrap.querySelectorAll('[data-c]').forEach(el=>el.addEventListener('click',()=>{const c=el.dataset.c;selectedClaseTabla=selectedClaseTabla&&selectedClaseTabla.clase===c?null:{clase:c};render()}));
-    document.querySelectorAll('#resLegend button').forEach(b=>{b.className='flex items-center gap-1 '+(b.dataset.s===resSort?'font-bold text-ink underline':'hover:text-ink')})}
-  document.querySelectorAll('#resLegend button').forEach(b => b.addEventListener('click', () => { resSort = b.dataset.s; render(); }));
+    // Configuración de eventos para la leyenda del resumen
+  document.querySelectorAll('#resLegend button').forEach(b => {
+    b.addEventListener('click', () => { 
+      resSort = b.dataset.s; 
+      render(); 
+    });
+  });
 
-document.querySelectorAll('#resLegend button').forEach(b => b.addEventListener('click', () => { resSort = b.dataset.s; render(); }));
-
-// Carga automática del archivo Excel desde GitHub con control anti-caché y lectura segura
-document.addEventListener("DOMContentLoaded", function() {
+  // Carga automática del archivo Excel desde GitHub (Anti-Caché y lectura segura)
+  document.addEventListener("DOMContentLoaded", function() {
     const urlArchivo = "Analisis pwq.xlsx?t=" + new Date().getTime();
 
     fetch(urlArchivo)
@@ -711,11 +714,13 @@ document.addEventListener("DOMContentLoaded", function() {
       .then(buffer => {
         const wb = XLSX.read(new Uint8Array(buffer), {type:'array'});
         
-        // Buscamos de forma segura la hoja 'TablaDigitacion', 'Digitacion' o la primera disponible
-        let sheetName = wb.SheetNames.find(s => s.toLowerCase().includes('tabladigitacion')) ||
-                        wb.SheetNames.find(s => s.toLowerCase().includes('digitacion')) ||
-                        wb.SheetNames[0];
+        // Búsqueda inteligente y flexible de la pestaña de datos en el Excel
+        let sheetName = wb.SheetNames.find(s => s.toLowerCase() === 'tabladigitacion') ||
+                        wb.SheetNames.find(s => s.toLowerCase() === 'digitacion') ||
+                        wb.SheetNames[4]; // Por seguridad apunta a la posición de la tabla si existe
                         
+        if (!sheetName) sheetName = wb.SheetNames[0];
+
         const ws = wb.Sheets[sheetName];
         let data = XLSX.utils.sheet_to_json(ws, {defval:''});
         
@@ -723,7 +728,7 @@ document.addEventListener("DOMContentLoaded", function() {
           throw new Error("La hoja '" + sheetName + "' está vacía.");
         }
 
-        // Si tu función de preparación existe, la ejecutamos con los datos limpios
+        // Inicializamos los datos con tu función principal 'prep'
         if (typeof prep === 'function') {
           prep(data);
         } else {
@@ -736,7 +741,9 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error("Error al cargar el Excel automáticamente:", error);
         alert("Aviso: " + error.message + "\nVerifica que 'Analisis pwq.xlsx' esté en la misma carpeta que index.html en GitHub.");
       });
-});
-})();
+  });
+
+})(); // Cierra la función anónima general
 </script>
-</body></html>
+</body>
+</html>
