@@ -237,6 +237,7 @@
 
 </div>
 <!-- CARGA AUTOMÁTICA DE DATOS SEGURA -->
+<!-- CARGA AUTOMÁTICA DE DATOS DESDE EL ARCHIVO JSON -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const loaderScreen = document.getElementById("loaderScreen");
@@ -247,43 +248,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   fetch("datos.json")
     .then(response => {
-      // Verificamos que la respuesta sea exitosa
-      if (!response.ok) throw new Error("Error al conectar con datos.json (Status: " + response.status + ")");
-      return response.text(); // Leemos como texto primero para validar que no sea HTML
+      if (!response.ok) throw new Error("No se pudo cargar el archivo datos.json");
+      return response.text();
     })
     .then(textData => {
-      // Si el texto empieza con '<', significa que GitHub devolvió un error HTML en lugar del JSON
       if (textData.trim().startsWith("<")) {
-        throw new Error("GitHub Pages está bloqueando o no encuentra el archivo JSON. Sube un archivo JSON más pequeño o verifica la ruta.");
+        throw new Error("GitHub Pages devolvió un error HTML en lugar del JSON.");
       }
-
       const jsonDataRaw = JSON.parse(textData);
       console.log("¡Datos cargados con éxito! Total de registros:", jsonDataRaw.length);
 
-      if (!jsonDataRaw || jsonDataRaw.length === 0) {
-        throw new Error("El archivo de datos está vacío.");
-      }
-
-      // Transformamos los datos al formato matricial
+      // Transformamos los datos al formato matricial que espera el tablero
       const headers = Object.keys(jsonDataRaw[0]);
       const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
       const jsonData = [headers, ...rows];
 
+      // Ocultamos la pantalla de carga y mostramos el dashboard
       if (loaderScreen) loaderScreen.classList.add("hidden");
       if (dashboard) dashboard.classList.remove("hidden");
-      
-      // Inicializamos el tablero buscando automáticamente cualquier función de inicio disponible
-        if (typeof initDashboard === "function") {
-            initDashboard(jsonData);
-        } else if (typeof procesarDatos === "function") {
-            procesarDatos(jsonData);
-        } else if (typeof cargarTablero === "function") {
-            cargarTablero(jsonData);
-        } else {
-            // Si la función tiene otro nombre, recorremos las funciones globales o disparamos el render
-            console.log("Ejecutando renderizado manual de datos...");
-            if (window.init) window.init(jsonData);
-        }
+
+      // Inicializamos el tablero buscando la función principal disponible
+      if (typeof initDashboard === "function") {
+        initDashboard(jsonData);
+      } else if (typeof procesarDatos === "function") {
+        procesarDatos(jsonData);
+      } else {
+        window.datosGlobales = jsonData;
+        console.log("Datos listos en window.datosGlobales");
+      }
+    })
     .catch(err => {
       console.error("Error en la carga:", err);
       if (loadError) {
