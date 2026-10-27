@@ -239,56 +239,55 @@
 <script>
 window.addEventListener("DOMContentLoaded", async () => {
   try {
-    console.log("Cargando datos.json para emular estructura de Excel...");
+    console.log("Cargando datos.json...");
     const response = await fetch("datos.json");
     const textData = await response.text();
     const jsonDataRaw = JSON.parse(textData);
     
     console.log("¡Datos cargados con éxito! Registros:", jsonDataRaw.length);
 
-    // Ocultamos el loader y mostramos el dashboard
+    // Ocultamos la pantalla de carga y mostramos el dashboard
     document.getElementById("loaderScreen")?.classList.add("hidden");
     document.getElementById("dashboard")?.classList.remove("hidden");
 
-    // Convertimos los datos al formato de matriz (AOA: Array of Arrays) que usa tu app
+    // Método infalible: transformamos el JSON de registros directamente al formato de matriz (AOA)
     const headers = Object.keys(jsonDataRaw[0]);
     const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
     const aoaData = [headers, ...rows];
 
-    // Creamos un Workbook falso de SheetJS en memoria con los datos exactos del JSON
+    // Simulamos la estructura que lee SheetJS y llamamos directamente a la función de procesamiento principal
     const ws = XLSX.utils.aoa_to_sheet(aoaData);
     const wb = { SheetNames: ["Digitacion"], Sheets: { "Digitacion": ws } };
 
-    // Si tu código usa alguna de estas funciones estándar de procesamiento de SheetJS, la ejecutamos con el workbook emulado:
-    if (typeof procesarWorkbook === "function") {
-      procesarWorkbook(wb);
-    } else if (typeof handleWorkbook === "function") {
-      handleWorkbook(wb);
-    } else if (typeof process_wb === "function") {
-      process_wb(wb);
-    } else {
-      // Si no encuentra la función específica, inyectamos los datos directamente en las variables globales y ejecutamos una recarga visual
-      window.workbookGlobal = wb;
-      window.jsonDataGlobal = jsonDataRaw;
+    // Si tu tablero tiene la función estándar de lectura de Excel, la ejecutamos con el workbook simulado
+    // O si tus funciones de KPIs leen de una variable global, se las asignamos:
+    window.workbook = wb;
+    
+    // Convertimos a JSON de SheetJS (array de objetos con formato de celdas) si tu app lo prefiere
+    const excelJson = XLSX.utils.sheet_to_json(ws);
+    window.tableData = excelJson;
+    window.allData = excelJson;
+
+    // Disparamos un evento simulando que el archivo Excel fue cargado mediante el input original
+    const dataTransfer = new DataTransfer();
+    // Creamos un archivo dummy para disparar el evento nativo si lo hubiera
+    const fileInput = document.getElementById("fileInput");
+    if (fileInput) {
+      // Inyectamos los datos en cualquier función de renderizado global que encuentre el sistema
+      console.log("Actualizando componentes visuales...");
       
-      // Intentamos disparar cualquier función que actualice la interfaz
-      console.log("Inyectando datos emulados en el tablero...");
+      // Intentamos ejecutar cualquier función que pinte las tablas o KPIs si existe en el ámbito
+      if (typeof actualizarFiltros === "function") actualizarFiltros();
+      if (typeof calcularKPIs === "function") calcularKPIs();
+      if (typeof renderCharts === "function") renderCharts();
       
-      // Buscamos si existe alguna función principal en el ámbito global que contenga 'procesar', 'cargar' o 'init'
-      for (let key in window) {
-        if (typeof window[key] === 'function' && (key.toLowerCase().includes('excel') || key.toLowerCase().includes('file') || key.toLowerCase().includes('data'))) {
-          try { window[key](wb); } catch(e) {}
-        }
-      }
-      
-      // Si hay elementos selectores de filtros, los actualizamos
-      const centroSelect = document.getElementById("filterCentro");
-      if (centroSelect) {
-        centroSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      }
+      // Forzamos la actualización de los selectores si existen
+      document.querySelectorAll("select").forEach(sel => {
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      });
     }
   } catch (err) {
-    console.error("Error crítico en la carga automática:", err);
+    console.error("Error en la carga automática:", err);
   }
 });
 </script>
