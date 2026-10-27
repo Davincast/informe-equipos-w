@@ -252,13 +252,23 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("loaderScreen")?.classList.add("hidden");
     document.getElementById("dashboard")?.classList.remove("hidden");
 
+    // Buscamos cómo se llama la función interna de tu tablero o simulamos el evento de Excel cargado
     if (typeof initDashboard === "function") {
       initDashboard(jsonData);
     } else if (typeof procesarDatos === "function") {
       procesarDatos(jsonData);
+    } else if (typeof processWorkbookBuffer === "function") {
+      // Simulamos un objeto con los datos para que tu lector de Excel interno los procese
+      processWorkbookBuffer(jsonData);
     } else {
+      // Si todo lo demás falla, disparamos la función genérica del sistema si existe
+      console.log("Forzando actualización visual de elementos...");
       window.datosGlobales = jsonData;
-      console.log("Tablero listo con datos globales");
+      // Forzamos un cambio en los selects para que el dashboard redibuje
+      const centroSel = document.getElementById("filterCentro");
+      if (centroSel) {
+        centroSel.dispatchEvent(new Event('change'));
+      }
     }
   } catch (err) {
     console.error("Error al cargar los datos:", err);
