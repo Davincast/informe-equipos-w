@@ -239,49 +239,54 @@
 <script>
 window.addEventListener("DOMContentLoaded", async () => {
   try {
-    console.log("Cargando datos.json automáticamente...");
+    console.log("Cargando datos.json para emular estructura de Excel...");
     const response = await fetch("datos.json");
     const textData = await response.text();
     const jsonDataRaw = JSON.parse(textData);
     
     console.log("¡Datos cargados con éxito! Registros:", jsonDataRaw.length);
 
-    // Ocultamos la pantalla de carga y mostramos el dashboard
+    // Ocultamos el loader y mostramos el dashboard
     document.getElementById("loaderScreen")?.classList.add("hidden");
     document.getElementById("dashboard")?.classList.remove("hidden");
 
-    // Inyectamos los 8116 registros en las variables globales más comunes de estos tableros
-    window.allData = jsonDataRaw;
-    window.rawData = jsonDataRaw;
-    window.datosGlobales = jsonDataRaw;
+    // Convertimos los datos al formato de matriz (AOA: Array of Arrays) que usa tu app
+    const headers = Object.keys(jsonDataRaw[0]);
+    const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
+    const aoaData = [headers, ...rows];
 
-    // Si tu plantilla usa funciones internas de renderizado o filtros, las disparamos:
-    if (typeof actualizarDashboard === "function") {
-      actualizarDashboard(jsonDataRaw);
-    } else if (typeof render === "function") {
-      render(jsonDataRaw);
-    } else if (typeof filtrarDatos === "function") {
-      filtrarDatos();
+    // Creamos un Workbook falso de SheetJS en memoria con los datos exactos del JSON
+    const ws = XLSX.utils.aoa_to_sheet(aoaData);
+    const wb = { SheetNames: ["Digitacion"], Sheets: { "Digitacion": ws } };
+
+    // Si tu código usa alguna de estas funciones estándar de procesamiento de SheetJS, la ejecutamos con el workbook emulado:
+    if (typeof procesarWorkbook === "function") {
+      procesarWorkbook(wb);
+    } else if (typeof handleWorkbook === "function") {
+      handleWorkbook(wb);
+    } else if (typeof process_wb === "function") {
+      process_wb(wb);
     } else {
-      // Forzamos la actualización simulando un cambio en el primer selector de centro
+      // Si no encuentra la función específica, inyectamos los datos directamente en las variables globales y ejecutamos una recarga visual
+      window.workbookGlobal = wb;
+      window.jsonDataGlobal = jsonDataRaw;
+      
+      // Intentamos disparar cualquier función que actualice la interfaz
+      console.log("Inyectando datos emulados en el tablero...");
+      
+      // Buscamos si existe alguna función principal en el ámbito global que contenga 'procesar', 'cargar' o 'init'
+      for (let key in window) {
+        if (typeof window[key] === 'function' && (key.toLowerCase().includes('excel') || key.toLowerCase().includes('file') || key.toLowerCase().includes('data'))) {
+          try { window[key](wb); } catch(e) {}
+        }
+      }
+      
+      // Si hay elementos selectores de filtros, los actualizamos
       const centroSelect = document.getElementById("filterCentro");
       if (centroSelect) {
-        // Disparamos eventos para que el tablero despierte y pinte las gráficas
-        centroSelect.value = "";
         centroSelect.dispatchEvent(new Event('change', { bubbles: true }));
       }
-      // Si hay una función global genérica de inicio, la ejecutamos
-      Object.keys(window).forEach(key => {
-        if (key.toLowerCase().includes('init') || key.toLowerCase().includes('load') || key.toLowerCase().includes('procesar')) {
-          try {
-            if (typeof window[key] === 'function' && key !== 'addEventListener') {
-              window[key](jsonDataRaw);
-            }
-          } catch(e) {}
-        }
-      });
     }
-    console.log("Tablero sincronizado con datos automáticos.");
   } catch (err) {
     console.error("Error crítico en la carga automática:", err);
   }
