@@ -236,15 +236,13 @@
   </section>
 
 </div>
-<!-- CARGA AUTOMÁTICA DE DATOS SEGURA -->
-<!-- CARGA AUTOMÁTICA DE DATOS DESDE EL ARCHIVO JSON -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const loaderScreen = document.getElementById("loaderScreen");
   const dashboard = document.getElementById("dashboard");
   const loadError = document.getElementById("loadError");
 
-  console.log("Cargando datos.json...");
+  console.log("Iniciando carga de datos.json...");
 
   fetch("datos.json")
     .then(response => {
@@ -258,16 +256,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const jsonDataRaw = JSON.parse(textData);
       console.log("¡Datos cargados con éxito! Total de registros:", jsonDataRaw.length);
 
-      // Transformamos los datos al formato matricial que espera el tablero
       const headers = Object.keys(jsonDataRaw[0]);
       const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
       const jsonData = [headers, ...rows];
 
-      // Ocultamos la pantalla de carga y mostramos el dashboard
       if (loaderScreen) loaderScreen.classList.add("hidden");
       if (dashboard) dashboard.classList.remove("hidden");
 
-      // Inicializamos el tablero buscando la función principal disponible
       if (typeof initDashboard === "function") {
         initDashboard(jsonData);
       } else if (typeof procesarDatos === "function") {
