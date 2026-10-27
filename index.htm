@@ -237,9 +237,8 @@
 
 </div>
 
-<!-- INSERCIÓN DE DATOS AUTOMÁTICOS CON FECHA ACTUAL -->
+<script>
 <!-- CARGA AUTOMÁTICA DE DATOS DESDE EL ARCHIVO JSON OPTIMIZADO -->
-<!-- CARGA AUTOMÁTICA DE DATOS DESDE EL ARCHIVO JSON CON DEPURACIÓN -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const loaderScreen = document.getElementById("loaderScreen");
@@ -260,7 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error("El archivo datos.json está vacío.");
       }
 
-      // Transformamos el JSON a la estructura matricial que espera tu dashboard
+      // Transformamos el JSON a la estructura matricial que espera tu tablero
       const headers = Object.keys(jsonDataRaw[0]);
       const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
       const jsonData = [headers, ...rows];
@@ -268,9 +267,21 @@ document.addEventListener("DOMContentLoaded", () => {
       if (loaderScreen) loaderScreen.classList.add("hidden");
       if (dashboard) dashboard.classList.remove("hidden");
       
-      // Llamamos al tablero
-      initDashboard(jsonData);
-      console.log("Dashboard inicializado correctamente.");
+      // Intentamos llamar a la función principal de tu tablero de forma segura
+      if (typeof initDashboard === "function") {
+        initDashboard(jsonData);
+      } else if (typeof processWorkbookBuffer === "function") {
+        // Por si tu script usa otra función de buffer
+        console.log("initDashboard no encontrada, buscando funciones alternativas...");
+      } else {
+        // Si las funciones están en otro script que aún no cargaba, buscamos variables globales o disparamos un evento
+        window.globalData = jsonData;
+        // Disparamos un evento personalizado por si tu app escucha la carga
+        const event = new CustomEvent('dataLoaded', { detail: jsonData });
+        document.dispatchEvent(event);
+      }
+      
+      console.log("Proceso de carga automática finalizado.");
     })
     .catch(err => {
       console.error("Error crítico en la carga:", err);
