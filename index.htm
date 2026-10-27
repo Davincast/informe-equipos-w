@@ -695,7 +695,9 @@
     document.querySelectorAll('#resLegend button').forEach(b=>{b.className='flex items-center gap-1 '+(b.dataset.s===resSort?'font-bold text-ink underline':'hover:text-ink')})}
   document.querySelectorAll('#resLegend button').forEach(b => b.addEventListener('click', () => { resSort = b.dataset.s; render(); }));
 
-// Carga automática del archivo Excel desde el mismo repositorio de GitHub (Protegido contra errores de formato)
+document.querySelectorAll('#resLegend button').forEach(b => b.addEventListener('click', () => { resSort = b.dataset.s; render(); }));
+
+// Carga automática del archivo Excel desde GitHub con control anti-caché y lectura segura
 document.addEventListener("DOMContentLoaded", function() {
     const urlArchivo = "Analisis pwq.xlsx?t=" + new Date().getTime();
 
@@ -709,18 +711,19 @@ document.addEventListener("DOMContentLoaded", function() {
       .then(buffer => {
         const wb = XLSX.read(new Uint8Array(buffer), {type:'array'});
         
-        // Buscamos de forma flexible cualquier pestaña que se parezca a 'digitacion' o tomamos la primera
-        let sheetName = wb.SheetNames.find(s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes('digitacion'));
-        if (!sheetName) sheetName = wb.SheetNames[0];
-        
+        // Buscamos de forma segura la hoja 'TablaDigitacion', 'Digitacion' o la primera disponible
+        let sheetName = wb.SheetNames.find(s => s.toLowerCase().includes('tabladigitacion')) ||
+                        wb.SheetNames.find(s => s.toLowerCase().includes('digitacion')) ||
+                        wb.SheetNames[0];
+                        
         const ws = wb.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json(ws, {defval:''});
+        let data = XLSX.utils.sheet_to_json(ws, {defval:''});
         
         if (!data || data.length === 0) {
-          throw new Error("La hoja '" + sheetName + "' está vacía o no tiene el formato correcto.");
+          throw new Error("La hoja '" + sheetName + "' está vacía.");
         }
-        
-        // Inicializamos con los datos seguros
+
+        // Si tu función de preparación existe, la ejecutamos con los datos limpios
         if (typeof prep === 'function') {
           prep(data);
         } else {
@@ -731,7 +734,7 @@ document.addEventListener("DOMContentLoaded", function() {
       })
       .catch(error => {
         console.error("Error al cargar el Excel automáticamente:", error);
-        alert("Aviso: " + error.message);
+        alert("Aviso: " + error.message + "\nVerifica que 'Analisis pwq.xlsx' esté en la misma carpeta que index.html en GitHub.");
       });
 });
 })();
