@@ -239,39 +239,43 @@
 
 <!-- INSERCIÓN DE DATOS AUTOMÁTICOS CON FECHA ACTUAL -->
 <!-- CARGA AUTOMÁTICA DE DATOS DESDE EL ARCHIVO JSON OPTIMIZADO -->
+<!-- CARGA AUTOMÁTICA DE DATOS DESDE EL ARCHIVO JSON CON DEPURACIÓN -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const loaderScreen = document.getElementById("loaderScreen");
   const dashboard = document.getElementById("dashboard");
   const loadError = document.getElementById("loadError");
 
-  // Hacemos la petición automática al archivo JSON optimizado en tu repositorio
+  console.log("Iniciando carga automática de datos.json...");
+
   fetch("datos.json")
     .then(response => {
-      if (!response.ok) throw new Error("No se pudo cargar el archivo de datos.");
+      if (!response.ok) throw new Error("No se pudo encontrar o cargar el archivo 'datos.json' (Código: " + response.status + ")");
       return response.json();
     })
     .then(jsonDataRaw => {
+      console.log("¡Archivo datos.json descargado con éxito! Filas totales:", jsonDataRaw.length);
+      
       if (!jsonDataRaw || jsonDataRaw.length === 0) {
-        throw new Error("El archivo de datos está vacío.");
+        throw new Error("El archivo datos.json está vacío.");
       }
 
-      // Transformamos el JSON de objetos a la estructura de filas matriciales que tu initDashboard necesita
+      // Transformamos el JSON a la estructura matricial que espera tu dashboard
       const headers = Object.keys(jsonDataRaw[0]);
       const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
       const jsonData = [headers, ...rows];
 
-      // Ocultamos la pantalla de carga y mostramos el dashboard con todas las gráficas y KPIs
       if (loaderScreen) loaderScreen.classList.add("hidden");
       if (dashboard) dashboard.classList.remove("hidden");
       
-      // Inicializamos tu tablero con los datos listos de forma automática
+      // Llamamos al tablero
       initDashboard(jsonData);
+      console.log("Dashboard inicializado correctamente.");
     })
     .catch(err => {
-      console.error("Error en la carga automática:", err);
+      console.error("Error crítico en la carga:", err);
       if (loadError) {
-        loadError.textContent = "Error al cargar los datos: " + err.message;
+        loadError.textContent = "Error: " + err.message;
         loadError.classList.remove("hidden");
       }
       if (loaderScreen) loaderScreen.classList.add("hidden");
