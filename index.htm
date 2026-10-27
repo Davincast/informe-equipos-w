@@ -240,25 +240,59 @@
 <!-- INSERCIÓN DE DATOS AUTOMÁTICOS CON FECHA ACTUAL -->
 <script>
   // Aquí se inyectan los datos y se autoselecciona la fecha/semana más reciente del sistema
-  document.addEventListener("DOMContentLoaded", () => {
-    // El sistema se inicializa directamente mostrando el panel y calculando la fecha actual de forma dinámica
-    document.getElementById("dashboard").classList.remove("hidden");
-    document.getElementById("loaderScreen").classList.add("hidden");
-    
-    // Auto-detección de fecha actual para los selectores si están disponibles
-    const d = new Date();
-    const currentYear = d.getFullYear().toString();
-    
-    // Configurar comportamiento del botón de reinicio para permitir carga manual si se desea
-    document.getElementById("resetBtn").addEventListener("click", () => {
-      document.getElementById("dashboard").classList.add("hidden");
-      document.getElementById("loaderScreen").classList.remove("hidden");
+  // Función mejorada para lectura automática y manejo de errores sin pantalla en blanco
+document.addEventListener("DOMContentLoaded", () => {
+  const loaderScreen = document.getElementById("loaderScreen");
+  const dashboard = document.getElementById("dashboard");
+  const fileInput = document.getElementById("fileInput");
+  const dropZone = document.getElementById("dropZone");
+  const loadError = document.getElementById("loadError");
+
+  // Intentar cargar automáticamente si el archivo está en la misma ruta (requiere entorno local compatible o Live Server)
+  fetch("Analisis pwq.xlsx")
+    .then(response => {
+      if (!response.ok) throw new Error("No se pudo cargar automáticamente el archivo en la ruta local.");
+      return response.arrayBuffer();
+    })
+    .then(buffer => {
+      processExcelData(buffer);
+    })
+    .catch(err => {
+      console.on("Carga automática omitida o bloqueada por seguridad del navegador. Usa el selector manual.", err);
+      // Si falla la carga automática por restricciones del navegador, mantenemos el panel listo pero mostramos el selector sin romper el diseño
     });
-    document.getElementById("backBtn").addEventListener("click", () => {
-      document.getElementById("dashboard").classList.remove("hidden");
-      document.getElementById("loaderScreen").classList.add("hidden");
-    });
+
+  // Manejador para la selección manual o DropZone que ya tenías, asegurando que procese la pestaña "Digitacion"
+  fileInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) readFile(file);
   });
-</script>
-<script id="data" type="application/json">{"eq":[["A-MBH-02","MICROBUS"],["A-VCH-036","VIDROCOMPACTADOR"],["VCH-21","VIDROCOMPACTADOR"],["VDD-81","VOLQUETA DOBLE TROQUE"],["VDD-76","VOLQUETA DOBLE TROQUE"],["VDD-79","VOLQUETA DOBLE TROQUE"],["VDD-84","VOLQUETA DOBLE TROQUE"],["A-CPK-089","COMPRESOR"],["A-EOD-649","EXCAVADORA DE ORUGAS"],["A-EOH-811","EXCAVADORA DE ORUGAS"],["A-EOV-816","EXCAVADORA DE ORUGAS"],["EOH-45","EXCAVADORA DE ORUGAS"],["REJ-15","RETROEXCAVADORA"],["TOC-12","TRACTOR DE ORUGAS"],["BIT-19","BOMBA DE INYECCION"],["SEA-02","SONDA DE PERFORACION"],["A-VLF-646","CAMIONETA"],["A-VLN-067","CAMION DE ESTACAS"],["BCP-23","BOMBA DE CONCRETO"],["CME-01","CLASIFICADORA MOVIL"],["CTI-32","CARRO TANQUE"],["EOH-47","EXCAVADORA DE ORUGAS"],["EOK-49","EXCAVADORA DE ORUGAS"],["E-VCA-04","VIDROCOMPACTADOR"],["MMF-03","MINIMIXER"],["VLC-559","CAMIONETA"],["MNC-08","MOTONIVELADORA"],["PEE-42","PLANTA ELECTRICA"],["PET-43","PLANTA ELECTRICA"],["PRA-07","PERFORADOR ROCK DRILL"],["REH-18","RETROEXCAVADORA"],["SEA-03","SONDA DE PERFORACION"],["VDD-83","VOLQUETA DOBLE TROQUE"],["VDD-69","VOLQUETA DOBLE TROQUE"],["VDD-74","VOLQUETA DOBLE TROQUE"],["VDD-75","VOLQUETA DOBLE TROQUE"],["VDD-85","VOLQUETA DOBLE TROQUE"],["VDI-40","VOLQUETA DOBLE TROQUE"],["VDI-56","VOLQUETA DOBLE TROQUE"],["VDI-58","VOLQUETA DOBLE TROQUE"],["VDI-65","VOLQUETA DOBLE TROQUE"]],"ce":["EPC - VIA LACTEA","DISEÑOS VIA LACTEA","METRO DE BOGOTA - WF4","CENTRO DE MANTENIMIENTO Y LOGISTICA","TALUD ITUANGO","APP PARQUEADERO MOVIC","VIA LACTEA","PCH CHORRERITAS","UNIDAD INDUSTRIAL EPC VIA LACTEA"],"nt":["§VARADO OBRA","FILTRACION","RUPTURA DE BALDE","DAÑO EN MANGUERAS HYD","MANGUERAS HIDRAULICAS ROTAS","FALLA EN REGULADOR DE ALTERNADOR","FALLA EN ALTERNADOR","LIMPIEZA DE FILTRACION - ENGRASE GENERAL - CALIBRACION DE ACELERACION","RUPTURA DE MANGUERAS HIDRAULICAS","RUPTURA DE MANGUERA HIDRAULICA","RUPTURA DE MANGUERA DE CILINDRO DE BOOM","RUPTURA DE VASTAGO DE CILINDRO DE BOOM","RUPTURA DE CILINDRO DE BOOM","CAMBIO DE CARRIL SUPERIOR","FALLA EN ACUMULADORES","RUPTURA DE MANGUERA Y ACUMULADORES DESCALIBRADOS","FALLO EN UNIDAD COMPRESORA","FALLA EN MANGUERAS DE LA PERFORADORA Y CARRETE","EQUIPO PRESENTA FALLA EN LA BOMBA DE TRANSFERENCIA. SE REALIZA DESMONTAJE, REPARACIÓN Y POSTERIOR INSTALACIÓN DE LA BOMBA.","REPARACION DE LLANTA POSICION # 3","LLANTA # 4 PINCHADA","PERDIDA DE POTENCIA","FALLA EN ENCENDIDO","MANGUERA HIDRAULICA ROTA","RUPTURA DE SOPORTE RUEDA GUIA","RUPTURA DE SOPORTE DE RUEDA GUIA","EQUIPO CON PÉRDIDA DE POTENCIA. SE REALIZA CAMBIO DE INYECTORES Y DIAGNÓSTICO ELECTRÓNICO","FALLA EN MANGUERA DEL RODILLO VIBRADOR. SE REALIZÓ CAMBIO DE MANGUERA.","LLANTA PINCHADA","EQUIPO EN REVISIÓN POR FALLAS MECÁNICAS EN EL CML.","REPARACION DE LLANTA  3 Y 6, CORRECCION FUGA DE AIRE","VARADO POR LLANTA","FALLA ELECTRICA_SISTEMA UREA","FALLA ELÉCTRICA, PÉRDIDA DE POTENCIA Y FRENOS INOPERATIVOS. FUERA DE SERVICIO HASTA REVISIÓN.","EQUIPO VARADO POR LLANTA PINCHADA. SE REALIZA REPARACIÓN","VEHÍCULO PRESENTA FALLAS EN EL SISTEMA DE FRENOS (CAMPANAS Y BANDAS). SE GESTIONA CONSECUCIÓN DE REPUESTOS.","FALLA EN REGULADORES DE FRENO TRASERO","FALLA EN AJUSTADORES DE FRENO","EQUIPO VARADO POR FALLA ELÉCTRICA, PÉRDIDA DE POTENCIA Y FRENADO.","REPARACION DE LLANTA # 8","REPARACION DE GANCHOS TAPA VOLCO","INTERVENCIÓN POR HOJA DE MUELLE REVENTADA. SE REALIZA CAMBIO DE MUELLE.","FUGA POR CAMARA DE FRENO","REPARACION DE LLANTA # 7","CAMBIO DE BOCINES Y RINES POR FALLAS MECÁNICAS.","EQUIPO EN REPARACIÓN POR FALLAS MECÁNICAS EN LA TRANSMISIÓN Y DIFERENCIAL. SE ENCUENTRA EN TALLER EXTERNO.","DAÑO EN SOPORTE DE TANQUE DE COMBUSTIBLE","SE REALIZA REEMPLAZO DE BARRA TRANSVERSAL DEBIDO A FRACTURA","EQUIPO VARADO POR LLANTA PINCHADA. SE REALIZA REPARACIÓN.","CAMBIO DE LLANTAS - REPARACION DE BOCÍN","FALLA EN SISTEMA DE REFRIGERACION DE MOTOR DIESEL","DAÑO EN TUERCA DE TORNILLO DE TRUNION","FALLA EN TURBOCARGADOR","SE REALIZA CAMBIO DE CRUCETA Y FLANGE DEL DIVISOR POR AFECTACIÓN MECÁNICA","FALLA ELECTRICA - ALTERNADOR","EQUIPO PRESENTÓ SINIESTRO DURANTE LAS HORAS DE LA MAÑANA. SE REALIZA EVALUACIÓN DE SU ESTADO Y SE VERIFICAN LOS COMPONENTES AFECTADOS, PROCEDIENDO CON LA ORGANIZACIÓN Y GESTIÓN DE LOS ELEMENTOS NECESARIOS PARA SU POSTERIOR REPARACIÓN."],"sm":["2025","W27","W01","W28","W04","W29","W02","W30","W03","W25","W26","W21","W22","W23","W24","W05","W06","W07","W08","W10","W31","W11","W32","W12","W09","W13","W14","W15","W16","W17","W18","W19","W20","W33","W34","W35","W36","W38","W37"],"rows":[]}</script>
-</body></html>
+
+  function readFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Buscar la pestaña 'Digitacion' de forma exacta o usar la primera si hay variaciones
+        const sheetName = workbook.SheetNames.includes("Digitacion") ? "Digitacion" : workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convertir a JSON manteniendo los parámetros originales
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        // Ocultar loader y mostrar dashboard con las medidas exactas
+        loaderScreen.classList.add("hidden");
+        dashboard.classList.remove("hidden");
+        
+        // Inicializar funciones del dashboard con los datos leídos
+        initDashboard(jsonData);
+      } catch (error) {
+        loadError.textContent = "Error al procesar el archivo Excel: " + error.message;
+        loadError.classList.remove("hidden");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+});
