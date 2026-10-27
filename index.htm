@@ -239,39 +239,45 @@
 <script>
 window.addEventListener("DOMContentLoaded", async () => {
   try {
+    console.log("Cargando datos.json automáticamente...");
     const response = await fetch("datos.json");
     const textData = await response.text();
     const jsonDataRaw = JSON.parse(textData);
     
     console.log("¡Datos cargados con éxito! Registros:", jsonDataRaw.length);
 
+    // Convertimos los objetos JSON a formato matricial (filas y columnas)
     const headers = Object.keys(jsonDataRaw[0]);
     const rows = jsonDataRaw.map(obj => headers.map(h => obj[h]));
     const jsonData = [headers, ...rows];
 
+    // Ocultamos el loader y mostramos el dashboard
     document.getElementById("loaderScreen")?.classList.add("hidden");
     document.getElementById("dashboard")?.classList.remove("hidden");
 
-    // Buscamos cómo se llama la función interna de tu tablero o simulamos el evento de Excel cargado
-    if (typeof initDashboard === "function") {
-      initDashboard(jsonData);
-    } else if (typeof procesarDatos === "function") {
-      procesarDatos(jsonData);
-    } else if (typeof processWorkbookBuffer === "function") {
-      // Simulamos un objeto con los datos para que tu lector de Excel interno los procese
-      processWorkbookBuffer(jsonData);
+    // Inyectamos los datos directamente en la variable o función que usa tu tablero
+    // Si tu app tiene una función de procesamiento global, la llamamos:
+    if (typeof procesarDatosExcel === "function") {
+      procesarDatosExcel(jsonData);
+    } else if (typeof cargarDatos === "function") {
+      cargarDatos(jsonData);
     } else {
-      // Si todo lo demás falla, disparamos la función genérica del sistema si existe
-      console.log("Forzando actualización visual de elementos...");
-      window.datosGlobales = jsonData;
-      // Forzamos un cambio en los selects para que el dashboard redibuje
+      // Simulamos que el archivo Excel fue cargado inyectándolo en la lógica existente de tu app
+      window.loadedData = jsonData;
+      
+      // Si existe una función global que renderiza o actualiza los selectores de centros, la disparamos
       const centroSel = document.getElementById("filterCentro");
-      if (centroSel) {
-        centroSel.dispatchEvent(new Event('change'));
+      if (centroSel && typeof poblarFiltros === "function") {
+        poblarFiltros(jsonData);
+      } else {
+        // Disparamos un evento genérico de cambio para forzar el redibujado
+        console.log("Forzando renderizado visual del tablero...");
+        if (typeof actualizarTablero === "function") actualizarTablero();
+        else if (typeof actualizarKPIs === "function") actualizarKPIs();
       }
     }
   } catch (err) {
-    console.error("Error al cargar los datos:", err);
+    console.error("Error crítico en la carga automática:", err);
   }
 });
 </script>
